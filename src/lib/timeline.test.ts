@@ -21,10 +21,10 @@ describe("focus windows", () => {
   it("ignores all-day events", () => {
     const slots = computeSlots([ev("x", day, new Date(2026, 9, 15), true)], at(8), at(18), 25);
     expect(slots).toHaveLength(1);
-    expect(slots[0].minutes).toBe(600);
+    expect(slots[0]!.minutes).toBe(600);
   });
   it("session ends 5 minutes before the next event", () => {
-    const [s] = computeSlots([ev("a", at(10), at(11))], at(8), at(18), 25);
+    const s = computeSlots([ev("a", at(10), at(11))], at(8), at(18), 25)[0]!;
     expect(sessionLengthForWindow(s, at(8))).toBe(115);
   });
 });

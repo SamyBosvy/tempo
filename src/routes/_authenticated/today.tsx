@@ -229,7 +229,7 @@ function AfterMeetingCards({ events, now, rated, primed, dayKey }: { events: Day
   const [note, setNote] = useState<Record<string, string>>({});
   const due = events.filter((e) => e.stressful && new Date(e.end).getTime() <= now && !rated.has(e.id) && !dismissed.includes(e.id));
   if (!due.length) return null;
-  const e = due[due.length - 1];
+  const e = due[due.length - 1]!;
   const dismiss = () => {
     const next = [...dismissed, e.id];
     setDismissed(next);

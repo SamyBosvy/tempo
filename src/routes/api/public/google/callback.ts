@@ -46,7 +46,7 @@ export const Route = createFileRoute("/api/public/google/callback")({
           return page(false, "Calendar access wasn't granted. Try again and tick the calendar box.");
         let email: string | null = null;
         try {
-          const p = JSON.parse(Buffer.from(tok.id_token!.split(".")[1], "base64url").toString());
+          const p = JSON.parse(Buffer.from(tok.id_token!.split(".")[1] ?? "", "base64url").toString());
           email = typeof p.email === "string" ? p.email : null;
         } catch {
           email = null;

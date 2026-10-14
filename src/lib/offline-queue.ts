@@ -60,7 +60,7 @@ export async function flush() {
   let synced = 0;
   try {
     while (read().length) {
-      const op = read()[0];
+      const op = read()[0]!;
       const { error } = await supabase
         .from(op.table)
         .upsert(op.row as never, { onConflict: "id", ignoreDuplicates: true });

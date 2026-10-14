@@ -188,7 +188,7 @@ function MeetingsVsFocus({ byDay }: { byDay: { day: string; minutes: number }[] 
       {q.isLoading ? <div role="status" aria-busy="true" className="h-44 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
         : q.isError ? <p className="text-sm text-muted-foreground">Calendar unavailable right now.</p> : (
         <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={q.data}>
+          <BarChart data={q.data ?? []}>
             <XAxis dataKey="label" tick={axis} />
             <YAxis tick={axis} width={28} />
             <Legend wrapperStyle={{ fontSize: 12 }} />

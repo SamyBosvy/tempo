@@ -37,8 +37,9 @@ export function phaseAt(pattern: BreathPattern, elapsedS: number) {
   const cycle = phases.reduce((a, p) => a + p.seconds, 0);
   let t = elapsedS % cycle;
   for (let i = 0; i < phases.length; i++) {
-    if (t < phases[i].seconds) return { index: i, phase: phases[i], remaining: phases[i].seconds - t };
-    t -= phases[i].seconds;
+    const ph = phases[i]!;
+    if (t < ph.seconds) return { index: i, phase: ph, remaining: ph.seconds - t };
+    t -= ph.seconds;
   }
-  return { index: 0, phase: phases[0], remaining: phases[0].seconds };
+  return { index: 0, phase: phases[0]!, remaining: phases[0]!.seconds };
 }
