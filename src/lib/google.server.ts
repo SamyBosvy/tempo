@@ -27,7 +27,7 @@ export function decrypt(stored: string): string {
   return Buffer.concat([d.update(buf.subarray(28)), d.final()]).toString("utf8");
 }
 
-type State = { u: string; r: string; exp: number; n: string };
+type State = { u: string; r: string; p?: string; exp: number; n: string };
 
 export function signState(s: State): string {
   const body = Buffer.from(JSON.stringify(s)).toString("base64url");
@@ -42,9 +42,13 @@ export function verifyState(token: string): State | null {
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  const s = JSON.parse(Buffer.from(body, "base64url").toString()) as State;
-  if (s.exp < Date.now()) return null;
-  return s;
+  try {
+    const s = JSON.parse(Buffer.from(body, "base64url").toString()) as State;
+    if (typeof s.u !== "string" || typeof s.r !== "string" || typeof s.n !== "string" || !Number.isFinite(s.exp) || s.exp < Date.now()) return null;
+    return s;
+  } catch {
+    return null;
+  }
 }
 
 export function newNonce() {

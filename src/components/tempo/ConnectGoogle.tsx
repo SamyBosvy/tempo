@@ -1,50 +1,27 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { startGoogleConnect } from "@/lib/google.functions";
 import { Button } from "@/components/ui/button";
+import { GOOGLE_RETURN_KEY, googleReturnPath, navigateToGoogle } from "@/lib/google-connect";
 
 export function ConnectGoogleButton({ label, size }: { label: string; size?: "sm" | "default" }) {
   const start = useServerFn(startGoogleConnect);
-  const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
 
   async function go() {
-    // Open the popup during the tap so it isn't blocked, then point it at Google.
-    const popup = window.open("", "tempo-google", "width=520,height=680");
     setBusy(true);
     try {
-      const { url } = await start();
-      if (!popup) {
-        window.location.href = url;
-        return;
+      const returnPath = googleReturnPath(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      try {
+        sessionStorage.setItem(GOOGLE_RETURN_KEY, returnPath);
+      } catch {
+        // Signed state also retains the return path when storage is unavailable.
       }
-      popup.location.href = url;
-      const ok = await new Promise<boolean>((resolve) => {
-        const onMsg = (e: MessageEvent) => {
-          if (e.origin !== window.location.origin || e.data?.type !== "tempo-google") return;
-          cleanup();
-          resolve(!!e.data.ok);
-        };
-        const poll = window.setInterval(() => {
-          if (popup.closed) {
-            cleanup();
-            resolve(false);
-          }
-        }, 600);
-        const cleanup = () => {
-          window.removeEventListener("message", onMsg);
-          window.clearInterval(poll);
-        };
-        window.addEventListener("message", onMsg);
-      });
-      await qc.invalidateQueries();
-      if (ok) toast.success(label.startsWith("Re") ? "Calendar reconnected." : "Calendar connected.");
-      else toast.error("Calendar not connected. Try again.");
-    } catch {
-      popup?.close();
-      toast.error("Couldn't start the connection. Try again.");
+      const { url } = await start({ data: { origin: window.location.origin, returnPath } });
+      navigateToGoogle(url, window);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't start the connection. Try again.");
     } finally {
       setBusy(false);
     }
