@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { GOOGLE_SCOPES, ReconnectRequired, getAccessToken, newNonce, signState } from "./google.server";
+import { GOOGLE_SCOPES, ReconnectRequired, getAccessToken, newNonce, revokeAndDelete, signState } from "./google.server";
 
 function appOrigin() {
   const req = getRequest();
@@ -132,28 +132,6 @@ export const getCalendarList = createServerFn({ method: "POST" })
       calendars: (body.items ?? []).map((c) => ({ id: c.primary ? "primary" : c.id, name: c.summary, primary: !!c.primary })),
     };
   });
-
-export async function revokeAndDelete(userId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { decrypt } = await import("./google.server");
-  const { data } = await supabaseAdmin
-    .from("google_tokens")
-    .select("refresh_token_ciphertext")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (data) {
-    try {
-      await fetch(
-        `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(decrypt(data.refresh_token_ciphertext))}`,
-        { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" } },
-      );
-    } catch {
-      // Revocation is best-effort; the token is deleted either way.
-    }
-  }
-  const { error } = await supabaseAdmin.from("google_tokens").delete().eq("user_id", userId);
-  if (error) throw new Error("Could not remove the connection");
-}
 
 export const disconnectGoogle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

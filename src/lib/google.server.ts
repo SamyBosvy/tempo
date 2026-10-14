@@ -85,3 +85,25 @@ export async function getAccessToken(userId: string): Promise<string | null> {
   }
   return body.access_token;
 }
+
+export async function revokeAndDelete(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("google_tokens")
+    .select("refresh_token_ciphertext")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (data) {
+    try {
+      await fetch(
+        `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(decrypt(data.refresh_token_ciphertext))}`,
+        { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+      );
+    } catch {
+      // Revocation is best-effort; the token is deleted either way.
+    }
+  }
+  const { error } = await supabaseAdmin.from("google_tokens").delete().eq("user_id", userId);
+  if (error) throw new Error("Could not remove the connection");
+}
+
