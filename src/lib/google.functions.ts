@@ -3,21 +3,20 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { GOOGLE_SCOPES, ReconnectRequired, getAccessToken, newNonce, revokeAndDelete, signState } from "./google.server";
-
-function appOrigin() {
-  const req = getRequest();
-  const url = new URL(req.url);
-  const sandboxHost = url.hostname === "localhost" ? req.headers.get("x-forwarded-host") : null;
-  return sandboxHost ? `https://${sandboxHost}` : url.origin;
-}
+import { googleCallbackUri, googleReturnPath } from "./google-connect";
 
 export const startGoogleConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input) => z.object({ origin: z.string().url(), returnPath: z.string().max(2048) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const request = getRequest();
+    // The browser Origin header is authoritative, including preview proxy hosts.
+    const origin = request.headers.get("origin") ?? new URL(request.url).origin;
+    if (data.origin !== origin) throw new Error("The connection must start from this app.");
     const clientId = process.env["GOOGLE_CLIENT_ID"];
     if (!clientId) throw new Error("Google isn't configured yet.");
-    const redirectUri = `${appOrigin()}/api/public/google/callback`;
-    const state = signState({ u: context.userId, r: redirectUri, exp: Date.now() + 10 * 60_000, n: newNonce() });
+    const redirectUri = googleCallbackUri(origin);
+    const state = signState({ u: context.userId, r: redirectUri, p: googleReturnPath(data.returnPath), exp: Date.now() + 10 * 60_000, n: newNonce() });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
