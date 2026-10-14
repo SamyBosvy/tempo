@@ -8,3 +8,17 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Tempo engineering rules
+- Per-screen queries load only what each screen needs (see src/lib/day-data.ts); no global data dumps.
+- Lists that can exceed 1,000 rows page (history by week, access lists by 20) or aggregate server-side; Insights numbers come from the security-invoker `get_insights` RPC.
+- No database writes from render or effects based on computed values; writes only from explicit user actions.
+- Check `{ error }` on every database and Google call, toast on failure, roll back optimistic updates.
+- Invalidate the right query keys after every mutation.
+- Store times in UTC, show local; "today" is the user's local day. All-day events are shown at the top and excluded from focus-window maths.
+- Logs (focus_sessions, interruptions, energy_ratings, prime_sessions) go through src/lib/offline-queue.ts with client-generated ids — so offline writes replay idempotently.
+- Event titles/descriptions/attendees are never stored in the database; only Google event id, times and flags — data minimisation.
+- Google refresh tokens live encrypted (AES-GCM, TOKEN_ENCRYPTION_KEY) in `google_tokens`, service-role only; all calendar calls go through server functions.
+- Accounts are created only by the `setupAccount` server function (public sign-up is disabled); the owner role comes solely from the OWNER_EMAIL secret.
+- Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
+- Service worker is registered only via src/lib/pwa.ts, never in dev or Lovable preview.
