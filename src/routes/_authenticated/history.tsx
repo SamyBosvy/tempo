@@ -174,7 +174,7 @@ function EditDialog({ entry, onClose, onDelete, table }: { entry: Entry; onClose
           : { note: text.trim() || null, rating: ea ?? 3 };
     const { error } = await supabase.from(table).update(patch as never).eq("id", entry.id);
     setBusy(false);
-    if (error) return toast.error("Couldn't save. Try again.");
+    if (error) { toast.error("Couldn't save. Try again."); return; }
     qc.invalidateQueries({ queryKey: ["history"] });
     qc.invalidateQueries({ queryKey: ["insights"] });
     onClose();

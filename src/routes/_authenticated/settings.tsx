@@ -100,20 +100,20 @@ function AccountSection() {
   }
   async function changePw(e: React.FormEvent) {
     e.preventDefault();
-    if (pw.length < 8) return toast.error("Password must be at least 8 characters.");
-    if (!(await verify(cur))) return toast.error("Current password is wrong.");
+    if (pw.length < 8) { toast.error("Password must be at least 8 characters."); return; }
+    if (!(await verify(cur))) { toast.error("Current password is wrong."); return; }
     const { error } = await supabase.auth.updateUser({ password: pw, current_password: cur } as never);
-    if (error) return toast.error("Something went wrong. Try again.");
+    if (error) { toast.error("Something went wrong. Try again."); return; }
     setCur(""); setPw("");
     toast.success("Password changed.");
   }
   async function changeEmail(e: React.FormEvent) {
     e.preventDefault();
-    if (!z.string().email().safeParse(newEmail.trim()).success) return toast.error("Enter a valid email.");
-    if (!(await verify(cur2))) return toast.error("Current password is wrong.");
+    if (!z.string().email().safeParse(newEmail.trim()).success) { toast.error("Enter a valid email."); return; }
+    if (!(await verify(cur2))) { toast.error("Current password is wrong."); return; }
     sessionStorage.setItem("tempo.emailChange", "1");
     const { error } = await supabase.auth.updateUser({ email: newEmail.trim().toLowerCase() }, { emailRedirectTo: `${window.location.origin}/settings` });
-    if (error) return toast.error("Something went wrong. Try again.");
+    if (error) { toast.error("Something went wrong. Try again."); return; }
     setCur2(""); setNewEmail("");
     setMsg("Check your inbox to confirm the change.");
   }
@@ -168,7 +168,7 @@ function DaySection({ s }: { s: Settings }) {
       <Toggle label="Prime reminders (while Tempo is open)" checked={s.notifications} onChange={async (v) => {
         if (v && typeof Notification !== "undefined" && Notification.permission !== "granted") {
           const p = await Notification.requestPermission();
-          if (p !== "granted") return toast.error("Notifications are blocked in your browser settings.");
+          if (p !== "granted") { toast.error("Notifications are blocked in your browser settings."); return; }
         }
         save.mutate({ notifications: v });
       }} />
