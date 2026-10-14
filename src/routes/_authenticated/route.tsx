@@ -125,7 +125,7 @@ function SafetyModal({ settings }: { settings: Settings }) {
   return (
     <Dialog open={open}>
       <DialogContent
-        className="safety-dialog flex flex-col gap-0 overflow-hidden rounded-2xl p-0 [&>button]:hidden"
+        className="safety-dialog flex translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-2xl p-0 [&>button]:hidden"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
