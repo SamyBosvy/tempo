@@ -20,6 +20,7 @@ describe("Calendar connection result", () => {
     expect(window.location.search).toBe("");
   });
   it("shows the specific failure without refreshing calendar queries", () => {
+    sessionStorage.setItem("tempo.google.returnPath", "/today");
     window.history.replaceState({}, "", "/settings?google=failed&google_error=scope");
     const qc = new QueryClient();
     const invalidate = vi.spyOn(qc, "invalidateQueries");
@@ -27,5 +28,7 @@ describe("Calendar connection result", () => {
     expect(toast.error).toHaveBeenCalledWith("Calendar access wasn't granted. Try again and tick the calendar box.");
     expect(invalidate).not.toHaveBeenCalled();
     expect(window.location.search).toBe("");
+    expect(window.location.pathname).toBe("/settings");
+    expect(sessionStorage.getItem("tempo.google.returnPath")).toBeNull();
   });
 });
