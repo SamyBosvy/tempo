@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SAFETY_TEXT } from "@/components/tempo/bits";
 import { PrimeNotifier } from "@/components/tempo/PrimeNotifier";
+import { GoogleConnectResult } from "@/components/tempo/GoogleConnectResult";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ function AppShell() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col">
+      <GoogleConnectResult />
       {(focus && pathname !== "/focus") || queued > 0 ? (
         <div className="sticky top-0 z-30 flex items-center justify-center gap-2 px-4 pt-[max(env(safe-area-inset-top),0.5rem)] pb-2">
           {focus && pathname !== "/focus" && (

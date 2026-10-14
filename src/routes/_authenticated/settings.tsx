@@ -46,11 +46,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SettingsPage() {
   const { data: s } = useSettings();
   const { role } = useRouteContext({ from: "/_authenticated" });
-  const { google } = Route.useSearch();
-  useEffect(() => {
-    if (google === "connected") toast.success("Calendar connected.");
-    if (google === "failed") toast.error("Calendar not connected. Try again.");
-  }, [google]);
   if (!s) return <ScreenSkeleton rows={6} />;
   return (
     <div className="space-y-6">
