@@ -22,3 +22,5 @@
 - Accounts are created only by the `setupAccount` server function (public sign-up is disabled); the owner role comes solely from the OWNER_EMAIL secret.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Service worker is registered only via src/lib/pwa.ts, never in dev or Lovable preview.
+- Every blocking modal or gate screen (disclaimers, onboarding, consent) must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned in view on every screen size, and must never trap the user if a save fails.
+- Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
