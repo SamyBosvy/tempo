@@ -219,7 +219,7 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
     enqueue("focus_sessions", {
       id: s.id,
       started_at: startedAt,
-      ended_at: new Date(Math.min(end, s.sessionStart + minutes * 60_000 + elapsedPauseGap(s, end))).toISOString(),
+      ended_at: new Date(end).toISOString(),
       planned_min: s.targetMin,
       actual_min: minutes,
       intention: s.intention || null,
@@ -245,10 +245,6 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
       <Button variant="ghost" className="w-full" onClick={onBack}>Back to timer</Button>
     </div>
   );
-}
-
-function elapsedPauseGap(s: { sessionStart: number }, end: number) {
-  return Math.max(0, end - s.sessionStart);
 }
 
 function DoneMoment({ done, onClose }: { done: Done; onClose: () => void }) {
