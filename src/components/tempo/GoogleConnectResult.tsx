@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GOOGLE_FAILURES, GOOGLE_RETURN_KEY, googleReturnPath } from "@/lib/google-connect";
+import { GOOGLE_FAILURES, GOOGLE_RETURN_KEY } from "@/lib/google-connect";
 
 export function GoogleConnectResult() {
   const qc = useQueryClient();
@@ -10,9 +10,7 @@ export function GoogleConnectResult() {
     const status = url.searchParams.get("google");
     if (status !== "connected" && status !== "failed") return;
     const reason = url.searchParams.get("google_error");
-    let stored: string | null = null;
     try {
-      stored = sessionStorage.getItem(GOOGLE_RETURN_KEY);
       sessionStorage.removeItem(GOOGLE_RETURN_KEY);
     } catch {
       // The signed return path works in a new tab without shared sessionStorage.
@@ -34,9 +32,8 @@ export function GoogleConnectResult() {
         : "Calendar not connected. Try again.";
       toast.error(message);
     }
-    if (stored && url.pathname === "/settings" && googleReturnPath(stored).startsWith("/today")) {
-      window.location.replace(googleReturnPath(stored));
-    }
+    // The callback already follows the signed return path. A second full-page
+    // navigation here would discard the toast before the user could see it.
   }, [qc]);
   return null;
 }
