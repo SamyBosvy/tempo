@@ -14,16 +14,341 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      allowed_emails: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+          invited_at: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+          invited_at?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          invited_at?: string | null
+        }
+        Relationships: []
+      }
+      energy_ratings: {
+        Row: {
+          at: string
+          event_id: string | null
+          id: string
+          kind: string
+          local_date: string
+          note: string | null
+          primed: boolean | null
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          at: string
+          event_id?: string | null
+          id?: string
+          kind: string
+          local_date: string
+          note?: string | null
+          primed?: boolean | null
+          rating: number
+          user_id?: string
+        }
+        Update: {
+          at?: string
+          event_id?: string | null
+          id?: string
+          kind?: string
+          local_date?: string
+          note?: string | null
+          primed?: boolean | null
+          rating?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_flags: {
+        Row: {
+          end_at: string
+          event_id: string
+          start_at: string
+          stressful: boolean
+          user_id: string
+        }
+        Insert: {
+          end_at: string
+          event_id: string
+          start_at: string
+          stressful: boolean
+          user_id?: string
+        }
+        Update: {
+          end_at?: string
+          event_id?: string
+          start_at?: string
+          stressful?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      focus_sessions: {
+        Row: {
+          actual_min: number
+          created_at: string
+          done_note: string | null
+          ended_at: string
+          energy_after: number | null
+          energy_before: number | null
+          id: string
+          intention: string | null
+          planned_min: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_min: number
+          created_at?: string
+          done_note?: string | null
+          ended_at: string
+          energy_after?: number | null
+          energy_before?: number | null
+          id?: string
+          intention?: string | null
+          planned_min: number
+          started_at: string
+          user_id?: string
+        }
+        Update: {
+          actual_min?: number
+          created_at?: string
+          done_note?: string | null
+          ended_at?: string
+          energy_after?: number | null
+          energy_before?: number | null
+          id?: string
+          intention?: string | null
+          planned_min?: number
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_tokens: {
+        Row: {
+          google_email: string | null
+          refresh_token_ciphertext: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          google_email?: string | null
+          refresh_token_ciphertext: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          google_email?: string | null
+          refresh_token_ciphertext?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      interruptions: {
+        Row: {
+          at: string
+          id: string
+          reason: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          at: string
+          id?: string
+          reason: string
+          session_id: string
+          user_id?: string
+        }
+        Update: {
+          at?: string
+          id?: string
+          reason?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interruptions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "focus_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_blocks: {
+        Row: {
+          end_at: string
+          id: string
+          kind: string
+          start_at: string
+          user_id: string
+        }
+        Insert: {
+          end_at: string
+          id?: string
+          kind: string
+          start_at: string
+          user_id?: string
+        }
+        Update: {
+          end_at?: string
+          id?: string
+          kind?: string
+          start_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prime_sessions: {
+        Row: {
+          at: string
+          duration_s: number
+          event_id: string | null
+          id: string
+          intention: string | null
+          pattern: string
+          user_id: string
+        }
+        Insert: {
+          at: string
+          duration_s: number
+          event_id?: string | null
+          id?: string
+          intention?: string | null
+          pattern: string
+          user_id?: string
+        }
+        Update: {
+          at?: string
+          duration_s?: number
+          event_id?: string | null
+          id?: string
+          intention?: string | null
+          pattern?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          breath_minutes: number
+          breath_pattern: string
+          calendar_ids: string[]
+          google_connected_at: string | null
+          google_email: string | null
+          keywords: string[]
+          min_focus_min: number
+          notifications: boolean
+          prime_lead_min: number
+          safety_ack_at: string | null
+          theme: string
+          updated_at: string
+          user_id: string
+          vibration: boolean
+          work_end: string
+          work_start: string
+        }
+        Insert: {
+          breath_minutes?: number
+          breath_pattern?: string
+          calendar_ids?: string[]
+          google_connected_at?: string | null
+          google_email?: string | null
+          keywords?: string[]
+          min_focus_min?: number
+          notifications?: boolean
+          prime_lead_min?: number
+          safety_ack_at?: string | null
+          theme?: string
+          updated_at?: string
+          user_id: string
+          vibration?: boolean
+          work_end?: string
+          work_start?: string
+        }
+        Update: {
+          breath_minutes?: number
+          breath_pattern?: string
+          calendar_ids?: string[]
+          google_connected_at?: string | null
+          google_email?: string | null
+          keywords?: string[]
+          min_focus_min?: number
+          notifications?: boolean
+          prime_lead_min?: number
+          safety_ack_at?: string | null
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          vibration?: boolean
+          work_end?: string
+          work_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_insights: { Args: { _tz: string }; Returns: Json }
+      get_user_id_by_email: { Args: { _email: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      list_members: {
+        Args: { _limit: number; _offset: number }
+        Returns: {
+          created_at: string
+          email: string
+          role: Database["public"]["Enums"]["app_role"]
+          total: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +475,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "member"],
+    },
   },
 } as const
