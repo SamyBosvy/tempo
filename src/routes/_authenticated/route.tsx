@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { CalendarClock, ChartLine, History, Timer, CloudOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useSettings, useSaveSettings } from "@/lib/settings";
+import { useSettings, useSaveSettings, type Settings } from "@/lib/settings";
+import { useSafetyAcknowledgement } from "@/lib/safety-acknowledgement";
 import { useFocusState, elapsedMs } from "@/lib/focus-timer";
 import { useQueueSize } from "@/lib/offline-queue";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ function AppShell() {
           })}
         </ul>
       </nav>
-      {settings && !settings.safety_ack_at && <SafetyModal />}
+      {settings && <SafetyModal key={settings.user_id} settings={settings} />}
       {settings && <PrimeNotifier settings={settings} />}
     </div>
   );
@@ -114,13 +115,23 @@ function fmtClock(ms: number) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function SafetyModal() {
+function SafetyModal({ settings }: { settings: Settings }) {
   const save = useSaveSettings();
+  const { open, acknowledge } = useSafetyAcknowledgement({
+    userId: settings.user_id,
+    acknowledged: Boolean(settings.safety_ack_at),
+    save: save.mutateAsync,
+  });
   return (
-    <Dialog open>
-      <DialogContent className="max-w-sm [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>Before you begin</DialogTitle>
+    <Dialog open={open}>
+      <DialogContent
+        className="safety-dialog flex translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-2xl p-0 [&>button]:hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[20px] text-left">
+          <DialogTitle className="mb-3 shrink-0 leading-snug tracking-normal">Before you begin</DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3 text-left text-muted-foreground">
               {SAFETY_TEXT.map((p) => (
@@ -129,18 +140,11 @@ function SafetyModal() {
             </div>
           </DialogDescription>
         </DialogHeader>
-        <Button
-          size="lg"
-          disabled={save.isPending}
-          onClick={() =>
-            save.mutate(
-              { safety_ack_at: new Date().toISOString() },
-              { onError: () => toast.error("Couldn't save. Try again.") },
-            )
-          }
-        >
-          I understand
-        </Button>
+        <footer className="sticky bottom-0 shrink-0 border-t border-subtle bg-background p-[16px]">
+          <Button size="lg" className="h-auto min-h-12 w-full whitespace-normal px-3 py-3" onClick={acknowledge}>
+            I understand
+          </Button>
+        </footer>
       </DialogContent>
     </Dialog>
   );

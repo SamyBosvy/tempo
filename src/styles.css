@@ -179,6 +179,22 @@
   }
 }
 
+.safety-dialog {
+  --safety-top: max(16px, env(safe-area-inset-top));
+  --safety-bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  top: var(--safety-top);
+  bottom: var(--safety-bottom);
+  width: auto;
+  height: fit-content;
+  max-width: 24rem;
+  max-height: min(90dvh, calc(100dvh - var(--safety-top) - var(--safety-bottom)));
+  margin: auto;
+  transform: none;
+  translate: 0 0;
+}
+
 @utility tap {
   min-height: 48px;
   min-width: 48px;
