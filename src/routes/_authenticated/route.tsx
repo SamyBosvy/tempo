@@ -130,7 +130,7 @@ function SafetyModal({ settings }: { settings: Settings }) {
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 text-left">
+        <DialogHeader className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[20px] text-left">
           <DialogTitle className="mb-3 shrink-0 leading-snug tracking-normal">Before you begin</DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-3 text-left text-muted-foreground">
@@ -140,7 +140,7 @@ function SafetyModal({ settings }: { settings: Settings }) {
             </div>
           </DialogDescription>
         </DialogHeader>
-        <footer className="sticky bottom-0 shrink-0 border-t border-subtle bg-background p-4">
+        <footer className="sticky bottom-0 shrink-0 border-t border-subtle bg-background p-[16px]">
           <Button size="lg" className="h-auto min-h-12 w-full whitespace-normal px-3 py-3" onClick={acknowledge}>
             I understand
           </Button>
