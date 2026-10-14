@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedFocusRouteImport } from './routes/_authenticated/focus'
+import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
+import { Route as AuthenticatedPrimeRouteImport } from './routes/_authenticated/prime'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
@@ -35,6 +37,16 @@ const AuthenticatedFocusRoute = AuthenticatedFocusRouteImport.update({
   path: '/focus',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPrimeRoute = AuthenticatedPrimeRouteImport.update({
+  id: '/prime',
+  path: '/prime',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
   path: '/today',
@@ -50,6 +62,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/focus': typeof AuthenticatedFocusRoute
+  '/insights': typeof AuthenticatedInsightsRoute
+  '/prime': typeof AuthenticatedPrimeRoute
   '/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
@@ -57,6 +71,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/focus': typeof AuthenticatedFocusRoute
+  '/insights': typeof AuthenticatedInsightsRoute
+  '/prime': typeof AuthenticatedPrimeRoute
   '/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
@@ -66,6 +82,8 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/focus': typeof AuthenticatedFocusRoute
+  '/_authenticated/insights': typeof AuthenticatedInsightsRoute
+  '/_authenticated/prime': typeof AuthenticatedPrimeRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
@@ -75,6 +93,8 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/focus'
+    | '/insights'
+    | '/prime'
     | '/today'
     | '/api/public/google/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -82,6 +102,8 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/focus'
+    | '/insights'
+    | '/prime'
     | '/today'
     | '/api/public/google/callback'
   id:
@@ -90,6 +112,8 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/reset-password'
     | '/_authenticated/focus'
+    | '/_authenticated/insights'
+    | '/_authenticated/prime'
     | '/_authenticated/today'
     | '/api/public/google/callback'
   fileRoutesById: FileRoutesById
@@ -131,6 +155,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFocusRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/insights': {
+      id: '/_authenticated/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof AuthenticatedInsightsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prime': {
+      id: '/_authenticated/prime'
+      path: '/prime'
+      fullPath: '/prime'
+      preLoaderRoute: typeof AuthenticatedPrimeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/today': {
       id: '/_authenticated/today'
       path: '/today'
@@ -150,11 +188,15 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
+  AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
+  AuthenticatedPrimeRoute: typeof AuthenticatedPrimeRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFocusRoute: AuthenticatedFocusRoute,
+  AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
+  AuthenticatedPrimeRoute: AuthenticatedPrimeRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
 }
 
