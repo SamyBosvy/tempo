@@ -5,7 +5,7 @@ describe("Calendar OAuth navigation", () => {
   it("redirects in the same tab without opening a popup", () => {
     const assign = vi.fn();
     const open = vi.fn();
-    const same = {} as Window;
+    const same = {} as Window["self"];
     navigateToGoogle("https://accounts.google.com/oauth", { self: same, top: same, location: { assign } as unknown as Location, open });
     expect(assign).toHaveBeenCalledWith("https://accounts.google.com/oauth");
     expect(open).not.toHaveBeenCalled();
@@ -14,7 +14,7 @@ describe("Calendar OAuth navigation", () => {
     const assign = vi.fn();
     const open = vi.fn();
     const top = { location: { assign: () => { throw new Error("Blocked"); } } } as unknown as Window;
-    navigateToGoogle("https://accounts.google.com/oauth", { self: {} as Window, top, location: { assign } as unknown as Location, open });
+    navigateToGoogle("https://accounts.google.com/oauth", { self: {} as Window["self"], top, location: { assign } as unknown as Location, open });
     expect(open).toHaveBeenCalledWith("https://accounts.google.com/oauth", "_blank", "noopener");
     expect(assign).not.toHaveBeenCalled();
   });
