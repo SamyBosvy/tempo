@@ -192,7 +192,7 @@
   max-height: min(90dvh, calc(100dvh - var(--safety-top) - var(--safety-bottom)));
   margin: auto;
   transform: none;
-  translate: none;
+  translate: 0 0;
 }
 
 @utility tap {
