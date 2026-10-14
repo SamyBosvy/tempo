@@ -54,6 +54,7 @@ function PrimeInner({ defaultPattern, defaultMin, vibrate }: { defaultPattern: B
   }, [stage, startedAt, minutes]);
 
   const cur = phaseAt(pattern, t);
+  const phase = cur.phase;
   useEffect(() => {
     if (stage !== "breathe") return;
     if (cur.index !== lastPhase.current) {
@@ -114,10 +115,10 @@ function PrimeInner({ defaultPattern, defaultMin, vibrate }: { defaultPattern: B
           <div
             aria-hidden
             className="absolute rounded-full bg-accent border-2 border-primary"
-            style={{ width: "100%", height: "100%", transform: `scale(${cur.phase.scale})`, transition: `transform ${cur.phase.seconds}s ease-in-out` }}
+            style={{ width: "100%", height: "100%", transform: `scale(${phase.scale})`, transition: `transform ${phase.seconds}s ease-in-out` }}
           />
           <div className="relative" aria-live="polite">
-            <div className="text-2xl font-semibold">{cur.phase.label}</div>
+            <div className="text-2xl font-semibold">{phase.label}</div>
             <div className="text-muted-foreground tabular">{Math.ceil(cur.remaining)}</div>
           </div>
         </div>

@@ -135,12 +135,12 @@ export function useDayLogs(day: Date) {
       if (s.error) throw s.error;
       if (p.error) throw p.error;
       // Merge rows still waiting in the offline queue.
-      const pr = pendingRows("energy_ratings").filter((x) => x.local_date === key) as typeof r.data;
+      const pr = pendingRows("energy_ratings").filter((x) => x['local_date'] === key) as typeof r.data;
       const ps = pendingRows("focus_sessions").filter(
-        (x) => String(x.started_at) >= from.toISOString() && String(x.started_at) < to.toISOString(),
+        (x) => String(x['started_at']) >= from.toISOString() && String(x['started_at']) < to.toISOString(),
       ) as typeof s.data;
       const pp = pendingRows("prime_sessions").filter(
-        (x) => String(x.at) >= from.toISOString() && String(x.at) < to.toISOString(),
+        (x) => String(x['at']) >= from.toISOString() && String(x['at']) < to.toISOString(),
       ) as typeof p.data;
       return { ratings: [...r.data, ...pr], sessions: [...s.data, ...ps], primes: [...p.data, ...pp] };
     },

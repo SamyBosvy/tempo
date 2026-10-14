@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedAccessRouteImport } from './routes/_authenticated/access'
 import { Route as AuthenticatedFocusRouteImport } from './routes/_authenticated/focus'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticated/insights'
 import { Route as AuthenticatedPrimeRouteImport } from './routes/_authenticated/prime'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 
@@ -32,9 +35,19 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAccessRoute = AuthenticatedAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFocusRoute = AuthenticatedFocusRouteImport.update({
   id: '/focus',
   path: '/focus',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
@@ -45,6 +58,11 @@ const AuthenticatedInsightsRoute = AuthenticatedInsightsRouteImport.update({
 const AuthenticatedPrimeRoute = AuthenticatedPrimeRouteImport.update({
   id: '/prime',
   path: '/prime',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
@@ -61,18 +79,24 @@ const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/access': typeof AuthenticatedAccessRoute
   '/focus': typeof AuthenticatedFocusRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/prime': typeof AuthenticatedPrimeRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/access': typeof AuthenticatedAccessRoute
   '/focus': typeof AuthenticatedFocusRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/prime': typeof AuthenticatedPrimeRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
@@ -81,9 +105,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/access': typeof AuthenticatedAccessRoute
   '/_authenticated/focus': typeof AuthenticatedFocusRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/prime': typeof AuthenticatedPrimeRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
 }
@@ -92,18 +119,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/reset-password'
+    | '/access'
     | '/focus'
+    | '/history'
     | '/insights'
     | '/prime'
+    | '/settings'
     | '/today'
     | '/api/public/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/reset-password'
+    | '/access'
     | '/focus'
+    | '/history'
     | '/insights'
     | '/prime'
+    | '/settings'
     | '/today'
     | '/api/public/google/callback'
   id:
@@ -111,9 +144,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/reset-password'
+    | '/_authenticated/access'
     | '/_authenticated/focus'
+    | '/_authenticated/history'
     | '/_authenticated/insights'
     | '/_authenticated/prime'
+    | '/_authenticated/settings'
     | '/_authenticated/today'
     | '/api/public/google/callback'
   fileRoutesById: FileRoutesById
@@ -148,11 +184,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/access': {
+      id: '/_authenticated/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AuthenticatedAccessRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/focus': {
       id: '/_authenticated/focus'
       path: '/focus'
       fullPath: '/focus'
       preLoaderRoute: typeof AuthenticatedFocusRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/insights': {
@@ -167,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/prime'
       fullPath: '/prime'
       preLoaderRoute: typeof AuthenticatedPrimeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/today': {
@@ -187,16 +244,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccessRoute: typeof AuthenticatedAccessRoute
   AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedPrimeRoute: typeof AuthenticatedPrimeRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccessRoute: AuthenticatedAccessRoute,
   AuthenticatedFocusRoute: AuthenticatedFocusRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedPrimeRoute: AuthenticatedPrimeRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
 }
 

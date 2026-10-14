@@ -9,7 +9,7 @@ import { useDayEvents, useDayLogs, type DayEvent } from "@/lib/day-data";
 import { atLocal, computeSlots, fmtDuration, fmtTime, localDateKey, meetingMinutes, sessionLengthForWindow, startOfLocalDay, type Slot } from "@/lib/timeline";
 import { enqueue } from "@/lib/offline-queue";
 import { useNow } from "@/lib/use-now";
-import { Card, EnergyPicker, ScreenSkeleton } from "@/components/tempo/bits";
+import { Card, EnergyPicker } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,7 +229,7 @@ function AfterMeetingCards({ events, now, rated, primed, dayKey }: { events: Day
   const [note, setNote] = useState<Record<string, string>>({});
   const due = events.filter((e) => e.stressful && new Date(e.end).getTime() <= now && !rated.has(e.id) && !dismissed.includes(e.id));
   if (!due.length) return null;
-  const e = due[due.length - 1];
+  const e = due[due.length - 1]!;
   const dismiss = () => {
     const next = [...dismissed, e.id];
     setDismissed(next);
@@ -413,4 +413,4 @@ function AddBlock({ day }: { day: Date }) {
   );
 }
 
-export { ScreenSkeleton };
+
