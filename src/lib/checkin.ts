@@ -21,7 +21,7 @@ export function primeIntents(primes: { event_id: string | null; intention?: stri
 
 /** The outcome is only kept when the meeting was primed with an intention. */
 export function afterMeetingRating(o: {
-  id: string; rating: number; note?: string; eventId: string; primed: boolean;
+  id: string; rating: number; note?: string | undefined; eventId: string; primed: boolean;
   intention: string | null; outcome: IntentOutcome | null; dayKey: string; at: string;
 }) {
   return {
