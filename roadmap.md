@@ -27,3 +27,10 @@
 # Prime upgrade
 - [x] P1–P5 phase cues, quiet room, meeting context and remembered eyes-closed mode.
 - [x] Test phase logic, full suite (75 tests), signed-in phone views in both themes and reduced motion; saved a real Prime session, read it back in History and removed it.
+
+## Prime upgrade 2 (P6–P10)
+- [x] P6 resume from timestamp + wake lock
+- [x] P7 notification auto-start with Starting… countdown
+- [x] P8 60-second reset (Today, back-to-back, app shortcut)
+- [x] P9 intention outcome on check-ins, History, export, Insights
+- [x] P10 coherent + extended exhale patterns
