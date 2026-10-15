@@ -29,7 +29,7 @@ type InsightData = {
   by_week: { week: string; minutes: number }[];
   energy_by_hour: { hour: number; avg: number }[];
   primed: { primed_n: number; primed_avg: number | null; unprimed_n: number; unprimed_avg: number | null };
-  interruptions: { reason: string; count: number }[];
+  interruptions: { source: "self" | "external" | "unknown"; reason: string; label: string | null; count: number }[];
 };
 
 const REASON: Record<string, string> = { meeting: "Meeting ran over", message: "Message/phone", distracted: "Distracted", other: "Other" };
@@ -142,11 +142,22 @@ function Insights() {
       <Card>
         <h2 className="mb-3 font-semibold">Interruptions</h2>
         {d.interruptions.length === 0 ? <p className="text-sm text-muted-foreground">None logged.</p> : (
-          <ul className="space-y-2">
-            {d.interruptions.sort((a, b) => b.count - a.count).map((i) => (
-              <li key={i.reason} className="flex justify-between"><span>{REASON[i.reason] ?? i.reason}</span><span className="tabular font-semibold">{i.count}</span></li>
-            ))}
-          </ul>
+          <div className="space-y-4">
+            {(["self", "external", "unknown"] as const).map((src) => {
+              const rows = d.interruptions.filter((i) => i.source === src).sort((a, b) => b.count - a.count);
+              if (!rows.length) return null;
+              return (
+                <div key={src}>
+                  <h3 className="mb-1 text-sm font-semibold text-muted-foreground">{src === "self" ? "Self" : src === "external" ? "External" : "Not specified"}</h3>
+                  <ul className="space-y-2">
+                    {rows.map((i) => (
+                      <li key={`${i.reason}-${i.label ?? ""}`} className="flex justify-between"><span>{i.label ?? REASON[i.reason] ?? i.reason}</span><span className="tabular font-semibold">{i.count}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         )}
       </Card>
     </div>

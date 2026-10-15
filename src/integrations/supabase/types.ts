@@ -129,6 +129,7 @@ export type Database = {
           energy_before: number | null
           id: string
           intention: string | null
+          parked_thoughts: string[] | null
           planned_min: number
           started_at: string
           user_id: string
@@ -142,6 +143,7 @@ export type Database = {
           energy_before?: number | null
           id?: string
           intention?: string | null
+          parked_thoughts?: string[] | null
           planned_min: number
           started_at: string
           user_id?: string
@@ -155,6 +157,7 @@ export type Database = {
           energy_before?: number | null
           id?: string
           intention?: string | null
+          parked_thoughts?: string[] | null
           planned_min?: number
           started_at?: string
           user_id?: string
@@ -185,23 +188,29 @@ export type Database = {
       interruptions: {
         Row: {
           at: string
+          custom_label: string | null
           id: string
           reason: string
           session_id: string
+          source: string | null
           user_id: string
         }
         Insert: {
           at: string
+          custom_label?: string | null
           id?: string
           reason: string
           session_id: string
+          source?: string | null
           user_id?: string
         }
         Update: {
           at?: string
+          custom_label?: string | null
           id?: string
           reason?: string
           session_id?: string
+          source?: string | null
           user_id?: string
         }
         Relationships: [
@@ -359,7 +368,10 @@ export type Database = {
           breath_minutes: number
           breath_pattern: string
           calendar_ids: string[]
+          custom_interruption: string | null
           daily_focus_target_min: number
+          end_notify: boolean
+          end_sound: boolean
           google_connected_at: string | null
           google_email: string | null
           keywords: string[]
@@ -372,6 +384,7 @@ export type Database = {
           updated_at: string
           user_id: string
           vibration: boolean
+          wake_lock: boolean
           work_end: string
           work_start: string
         }
@@ -379,7 +392,10 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          custom_interruption?: string | null
           daily_focus_target_min?: number
+          end_notify?: boolean
+          end_sound?: boolean
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
@@ -392,6 +408,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           vibration?: boolean
+          wake_lock?: boolean
           work_end?: string
           work_start?: string
         }
@@ -399,7 +416,10 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          custom_interruption?: string | null
           daily_focus_target_min?: number
+          end_notify?: boolean
+          end_sound?: boolean
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
@@ -412,6 +432,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vibration?: boolean
+          wake_lock?: boolean
           work_end?: string
           work_start?: string
         }

@@ -58,6 +58,7 @@ function SettingsPage() {
       <AttentionSection />
       <AccountSection />
       <DaySection s={s} />
+      <FocusSection s={s} />
       <BreathSection s={s} />
       <CalendarSection s={s} />
       {role === "owner" && (
@@ -217,6 +218,30 @@ function DaySection({ s }: { s: Settings }) {
         save.mutate({ notifications: v });
       }} />
       <Toggle label="Light mode" checked={s.theme === "light"} onChange={(v) => save.mutate({ theme: v ? "light" : "dark" })} />
+    </Section>
+  );
+}
+
+function FocusSection({ s }: { s: Settings }) {
+  const save = useSaveSettings();
+  const [custom, setCustom] = useState(s.custom_interruption ?? "");
+  return (
+    <Section title="Focus">
+      <Toggle label="Keep screen awake during focus" checked={s.wake_lock} onChange={(v) => save.mutate({ wake_lock: v })} />
+      <Toggle label="Sound at end" checked={s.end_sound} onChange={(v) => save.mutate({ end_sound: v })} />
+      <Toggle label="Notify at end" checked={s.end_notify} onChange={async (v) => {
+        if (v && typeof Notification !== "undefined" && Notification.permission === "default") await Notification.requestPermission();
+        save.mutate({ end_notify: v });
+      }} />
+      <div className="space-y-1.5">
+        <Label htmlFor="custom-int">Your own interruption reason</Label>
+        <Input id="custom-int" maxLength={30} className="h-12" placeholder="e.g. Kids" value={custom} onChange={(e) => setCustom(e.target.value)}
+          onBlur={() => {
+            const v = custom.trim().slice(0, 30) || null;
+            if (v !== (s.custom_interruption ?? null)) save.mutate({ custom_interruption: v });
+          }} />
+        <p className="text-xs text-muted-foreground">Shown as an extra choice in "What happened?". Up to 30 characters.</p>
+      </div>
     </Section>
   );
 }

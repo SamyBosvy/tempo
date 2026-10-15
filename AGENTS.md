@@ -26,3 +26,5 @@
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth navigates directly to Google without popup coordination; derive the callback from the validated browser Origin, carry a restricted return path in signed state and sessionStorage, and consume redirect results once in the authenticated shell to refresh Calendar queries.
 - Recurring manual blocks live in recurring_blocks and are expanded per day client-side (timeline.expandRecurring); one-day edits add a recurring_skips row plus a one-off manual block, so the series stays intact.
+- Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, and fire once per target via a `signalled` flag — so reloads or tab switches never double-chime.
+- Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
