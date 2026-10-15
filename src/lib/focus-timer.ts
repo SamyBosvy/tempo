@@ -105,7 +105,8 @@ export const focusTimer = {
   extend(min: number) {
     const s = read();
     if (!s) return;
-    write({ ...s, targetMin: s.targetMin + min, overtime: false, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
+    const base = Math.max(s.targetMin, Math.ceil(elapsedMs(s) / 60_000));
+    write({ ...s, targetMin: base + min, overtime: false, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
   },
   clear() {
     write(null);
