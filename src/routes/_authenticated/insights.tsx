@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { localDateFromKey } from "@/lib/fix-rules";
 import { useQuery } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ type InsightData = {
   by_week: { week: string; minutes: number }[];
   energy_by_hour: { hour: number; avg: number }[];
   primed: { primed_n: number; primed_avg: number | null; unprimed_n: number; unprimed_avg: number | null };
+  intent_outcomes?: { yes: number; partly: number; no: number };
   interruptions: { source: "self" | "external" | "unknown"; reason: string; label: string | null; count: number }[];
 };
 
@@ -127,6 +129,22 @@ function Insights() {
           </ResponsiveContainer>
         )}
       </Card>
+
+      {d.intent_outcomes && d.intent_outcomes.yes + d.intent_outcomes.partly + d.intent_outcomes.no > 0 && (() => {
+        const o = d.intent_outcomes;
+        const n = o.yes + o.partly + o.no;
+        return (
+          <Card>
+            <h2 className="mb-2 font-semibold">Did you get what you wanted?</h2>
+            <p className="text-sm text-muted-foreground">Primed meetings with an intention ({n}).</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              {([["yes", "Yes"], ["partly", "Partly"], ["no", "No"]] as const).map(([k, label]) => (
+                <div key={k} className="rounded-xl bg-secondary p-3"><div className={cn("text-2xl font-semibold tabular", k === "yes" && "text-gold-text")}>{Math.round((o[k] / n) * 100)}%</div><div className="text-xs">{label}</div></div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
 
       {d.primed.primed_n >= 3 && d.primed.unprimed_n >= 3 && (
         <Card>
