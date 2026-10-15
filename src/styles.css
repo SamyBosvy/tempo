@@ -265,3 +265,21 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Landing "day ribbon": blocks fill left to right, then a soft loop. Static when motion is reduced. */
+@keyframes ribbon-fill {
+  0% { transform: scaleX(0); opacity: 0; }
+  12% { transform: scaleX(1); opacity: 1; }
+  80% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+.day-ribbon-block {
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .day-ribbon[data-animate="true"] .day-ribbon-block {
+    animation: ribbon-fill 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both;
+    animation-delay: var(--d, 0s);
+  }
+}

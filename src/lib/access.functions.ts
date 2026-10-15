@@ -161,3 +161,34 @@ export const myRole = createServerFn({ method: "POST" })
     const roles = (data ?? []).map((r) => r.role);
     return { role: roles.includes("owner") ? "owner" : roles.includes("member") ? "member" : null };
   });
+
+export type GoogleAccessResult = { ok: true } | { ok: false; code: "not_invited" | "error" };
+
+/**
+ * Called right after a Google sign-in. Open sign-up stays disabled; this
+ * checks the server-side allowlist (or OWNER_EMAIL) and grants the role.
+ * A Google account that isn't invited is removed and must be signed out.
+ */
+export const finishGoogleSignIn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<GoogleAccessResult> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (uErr || !u.user?.email) return { ok: false, code: "error" };
+    const { data: roles, error: rErr } = await supabaseAdmin.from("user_roles").select("id").eq("user_id", context.userId);
+    if (rErr) return { ok: false, code: "error" };
+    if (roles && roles.length > 0) return { ok: true };
+    const email = normaliseEmail(u.user.email);
+    const owner = isOwnerEmail(email, process.env["OWNER_EMAIL"]);
+    if (!owner) {
+      const { data: allowed, error } = await supabaseAdmin.from("allowed_emails").select("email").eq("email", email).maybeSingle();
+      if (error) return { ok: false, code: "error" };
+      if (!allowed) {
+        await supabaseAdmin.auth.admin.deleteUser(context.userId);
+        return { ok: false, code: "not_invited" };
+      }
+    }
+    const { error: insErr } = await supabaseAdmin.from("user_roles").insert({ user_id: context.userId, role: owner ? "owner" : "member" });
+    if (insErr) return { ok: false, code: "error" };
+    return { ok: true };
+  });

@@ -11,3 +11,20 @@ export function isOwnerEmail(email: string, ownerEmail: string | undefined): boo
 export function buildInviteLink(origin: string, email: string): string {
   return `${origin}/?setup=1&email=${encodeURIComponent(normaliseEmail(email))}`;
 }
+
+/** Same-origin path to go to after sign-in; anything unsafe falls back to /today. */
+export function safeNextPath(next: string | null | undefined): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/today";
+  if (/[\u0000-\u001f]/.test(next)) return "/today";
+  return next;
+}
+
+export type Strength = "weak" | "okay" | "strong";
+/** Simple password strength: length plus variety of character types. */
+export function passwordStrength(pw: string): Strength {
+  if (pw.length < 8) return "weak";
+  const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(pw)).length;
+  if (pw.length >= 12 && kinds >= 3) return "strong";
+  if (kinds >= 2 || pw.length >= 12) return "okay";
+  return "weak";
+}
