@@ -6,6 +6,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { markSynced } from './sync-status';
 
 export type QueueTable = "focus_sessions" | "interruptions" | "energy_ratings" | "prime_sessions";
 export type Op = { qid: string; table: QueueTable; row: Record<string, unknown>; attempts?: number; lastError?: string };
@@ -16,6 +17,7 @@ const ATTENTION_KEY = "tempo.queue.attention.v1";
 const listeners = new Set<() => void>();
 let qc: QueryClient | null = null;
 let flushing = false;
+let flushPromise: Promise<void> | null = null;
 let snapshot: Op[] = [];
 let attention: Op[] = [];
 let loaded = false;
@@ -79,6 +81,12 @@ function isNetworkError(msg: string) {
 }
 
 export async function flush() {
+  if (flushPromise) return flushPromise;
+  flushPromise = runFlush().finally(() => { flushPromise = null; });
+  return flushPromise;
+}
+
+async function runFlush() {
   if (flushing || typeof window === "undefined") return;
   const start = read();
   if (!start.length) return;
@@ -114,7 +122,7 @@ export async function flush() {
         writeAttention([...readAttention(), { ...op, attempts, lastError: message }]);
         movedToAttention++;
       } else {
-        write(read().map((o) => (o.qid === qid ? { ...o, attempts, lastError: message! } : o)));
+        write(read().map((o) => (o.qid === qid ? { ...o, attempts, lastError: message } : o)));
         failedNow = true;
       }
     }
@@ -124,6 +132,7 @@ export async function flush() {
   if (movedToAttention) toast.error("An entry couldn't be saved. See Settings to retry or discard it.");
   else if (failedNow) toast.error("Couldn't save an entry. Will retry.");
   if (synced > 0) {
+    markSynced();
     qc?.invalidateQueries();
     if (wasOffline && read().length === 0 && !movedToAttention) toast.success("Synced. Everything's saved.");
   }

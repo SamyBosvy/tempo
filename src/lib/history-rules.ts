@@ -12,5 +12,9 @@ export function validateSession(date:string,time:string,length:string,now=new Da
  return {ok:true,start:start.toISOString(),end:end.toISOString(),minutes};
 }
 export function historyQuery(day:string,type:HistoryType,search:string,page=0,offset=0){const end=startOfLocalDay(new Date(`${day}T12:00:00`));end.setDate(end.getDate()+1-page*7);const start=new Date(end);start.setDate(start.getDate()-7);return {_from:start.toISOString(),_to:end.toISOString(),_type:type,_search:search.trim().replace(/[\\%_]/g,'\\$&'),_offset:offset};}
+export const HISTORY_SEARCH_PAGE_SIZE=50;
+export function historySearchQuery(type:HistoryType,search:string,offset=0){return {_type:type,_search:search.trim().replace(/[\\%_]/g,'\\$&'),_offset:Math.max(0,offset)};}
+export function monthShade(minutes:number,max:number):0|1|2|3|4 {if(minutes<=0||max<=0)return 0;return Math.min(4,Math.ceil(minutes/max*4)) as 1|2|3|4;}
+export const MONTH_SHADE_OPACITY=[0,.15,.35,.6,.85] as const;
 export function daySummary(entries:HistoryEntry[]){const sorted=[...entries].sort((a,b)=>a.at.localeCompare(b.at)),ratings=sorted.filter(e=>e.type==='rating');return {minutes:entries.reduce((n,e)=>n+(e.type==='session'?e.actual_min??0:0),0),primes:entries.filter(e=>e.type==='prime').length,morning:ratings.find(e=>e.kind==='morning')?.rating??null,last:ratings.at(-1)?.rating??null};}
 export function historyRibbon(entries:HistoryEntry[],day:string,workStart:string,workEnd:string){const d=new Date(`${day}T12:00:00`),start=atLocal(d,workStart).getTime(),end=atLocal(d,workEnd).getTime();if(end<=start)return [];return entries.filter(e=>e.type!=='rating').map(e=>{const a=Math.max(start,new Date(e.at).getTime()),b=Math.min(end,new Date(e.at).getTime()+(e.type==='session'?(e.actual_min??0)*60:(e.duration_s??0))*1000);return {id:e.id,type:e.type,left:100*(a-start)/(end-start),width:100*(b-a)/(end-start)};}).filter(x=>x.width>0);}
