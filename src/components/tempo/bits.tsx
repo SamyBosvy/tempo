@@ -20,7 +20,7 @@ export function EnergyPicker({
           aria-label={`Energy ${n} of 5`}
           onClick={() => onChange(n)}
           className={cn(
-            "tap flex-1 rounded-xl border text-lg font-semibold tabular transition-colors",
+            "h-12 min-w-0 flex-1 rounded-xl border text-lg font-semibold tabular transition-colors",
             value === n
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border bg-card text-foreground hover:bg-accent",

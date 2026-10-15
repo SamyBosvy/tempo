@@ -76,15 +76,18 @@ export function computeSlots(
   workEnd: Date,
   minFocusMin: number,
   now?: Date,
+  bufferMin = 0,
 ): Slot[] {
   const from = now && now > workStart ? now : workStart;
   if (from >= workEnd) return [];
-  const blocks = busyBlocks(events, from, workEnd);
+  // Include meetings that ended within the buffer before `from`, so their buffer still applies.
+  const blocks = busyBlocks(events, new Date(from.getTime() - bufferMin * 60_000), workEnd);
   const slots: Slot[] = [];
   let cursor = from;
   for (const b of blocks) {
     if (b.start > cursor) push(cursor, b.start);
-    if (b.end > cursor) cursor = b.end;
+    const after = new Date(Math.min(b.end.getTime() + bufferMin * 60_000, workEnd.getTime()));
+    if (after > cursor) cursor = after;
   }
   if (cursor < workEnd) push(cursor, workEnd);
 
@@ -115,4 +118,92 @@ export function meetingMinutes(events: CalEvent[], from: Date, to: Date): number
     (a, b) => a + (b.end.getTime() - b.start.getTime()) / 60000,
     0,
   );
+}
+
+// ---------- Recurring blocks ----------
+export type RecurringBlock = {
+  id: string;
+  kind: string;
+  label: string | null;
+  start_time: string;
+  end_time: string;
+  days: number[];
+  active: boolean;
+};
+export const WEEKDAYS = [1, 2, 3, 4, 5];
+export const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
+
+/** Recurring blocks that occur on `day` (local), minus skipped ones, as calendar events. */
+export function expandRecurring(blocks: RecurringBlock[], skips: { block_id: string; local_date: string }[], day: Date): CalEvent[] {
+  const key = localDateKey(day);
+  const dow = day.getDay();
+  const skipped = new Set(skips.filter((s) => s.local_date === key).map((s) => s.block_id));
+  return blocks
+    .filter((b) => b.active && b.days.includes(dow) && !skipped.has(b.id))
+    .map((b) => ({
+      id: `recurring:${b.id}:${key}`,
+      title: b.label || (b.kind === "meeting" ? "Meeting" : "Focus"),
+      start: atLocal(day, b.start_time).toISOString(),
+      end: atLocal(day, b.end_time).toISOString(),
+      allDay: false,
+      source: "manual" as const,
+      kind: b.kind === "focus" ? ("focus" as const) : ("meeting" as const),
+    }));
+}
+
+// ---------- Back-to-back runs ----------
+/** First run of 3+ busy blocks with gaps under `maxGapMin`, that hasn't ended yet. */
+export function backToBackRun(events: CalEvent[], from: Date, to: Date, now: Date, maxGapMin = 10, minCount = 3) {
+  const blocks = busyBlocks(events, from, to);
+  const merged: { start: Date; end: Date; count: number }[] = [];
+  for (const b of blocks) {
+    const last = merged[merged.length - 1];
+    if (last && b.start.getTime() - last.end.getTime() < maxGapMin * 60_000) {
+      if (b.end > last.end) last.end = b.end;
+      last.count++;
+    } else merged.push({ start: b.start, end: b.end, count: 1 });
+  }
+  return merged.find((r) => r.count >= minCount && r.end > now) ?? null;
+}
+
+// ---------- Day ribbon ----------
+export type RibbonSegment = { id: string; kind: "meeting" | "stressful" | "focus" | "manual-focus"; x: number; w: number };
+/** Segments as fractions (0–1) of the working day. */
+export function ribbonSegments(
+  events: { id: string; start: string; end: string; allDay: boolean; kind?: string; stressful?: boolean }[],
+  slots: Slot[],
+  workStart: Date,
+  workEnd: Date,
+): RibbonSegment[] {
+  const span = workEnd.getTime() - workStart.getTime();
+  if (span <= 0) return [];
+  const frac = (s: Date, e: Date) => {
+    const a = Math.max(0, (s.getTime() - workStart.getTime()) / span);
+    const b = Math.min(1, (e.getTime() - workStart.getTime()) / span);
+    return b > a ? { x: a, w: b - a } : null;
+  };
+  const out: RibbonSegment[] = [];
+  for (const sl of slots) {
+    if (!sl.isWindow) continue;
+    const f = frac(sl.start, sl.end);
+    if (f) out.push({ id: `slot:${sl.start.getTime()}`, kind: "focus", ...f });
+  }
+  for (const e of events) {
+    if (e.allDay) continue;
+    const f = frac(new Date(e.start), new Date(e.end));
+    if (!f) continue;
+    out.push({ id: e.id, kind: e.kind === "focus" ? "manual-focus" : e.stressful ? "stressful" : "meeting", ...f });
+  }
+  return out.sort((a, b) => a.x - b.x);
+}
+
+/** Position (0–1) of `now` across the working day, or null outside it. */
+export function nowFraction(now: Date, workStart: Date, workEnd: Date) {
+  const span = workEnd.getTime() - workStart.getTime();
+  if (span <= 0 || now < workStart || now > workEnd) return null;
+  return (now.getTime() - workStart.getTime()) / span;
+}
+
+export function fmtMinutesShort(start: string, end: string) {
+  return fmtDuration((new Date(end).getTime() - new Date(start).getTime()) / 60000);
 }

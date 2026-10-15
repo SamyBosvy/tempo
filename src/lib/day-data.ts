@@ -4,10 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getCalendarEvents, type EventsResult } from "./google.functions";
-import { localDateKey, matchesKeywords, startOfLocalDay, type CalEvent } from "./timeline";
+import { expandRecurring, localDateKey, matchesKeywords, startOfLocalDay, type CalEvent, type RecurringBlock } from "./timeline";
 import { pendingRows } from "./offline-queue";
 
-export type DayEvent = CalEvent & { stressful: boolean; flagged: boolean | null };
+export type StressReason = "high_stakes" | "conflict" | "presenting" | "other";
+export type DayEvent = CalEvent & {
+  stressful: boolean;
+  flagged: boolean | null;
+  reason: StressReason | null;
+  /** Manual one-off block id, or recurring block id for repeating ones. */
+  manualId?: string;
+  recurringId?: string;
+  label?: string | null;
+};
 
 function dayRange(day: Date) {
   const from = startOfLocalDay(day);
@@ -53,7 +62,7 @@ export function useManualBlocks(day: Date) {
       const { from, to } = dayRange(day);
       const { data, error } = await supabase
         .from("manual_blocks")
-        .select("id, kind, start_at, end_at")
+        .select("id, kind, start_at, end_at, label")
         .lt("start_at", to.toISOString())
         .gt("end_at", from.toISOString())
         .order("start_at");
@@ -71,7 +80,7 @@ export function useEventFlags(day: Date) {
       const { from, to } = dayRange(day);
       const { data, error } = await supabase
         .from("event_flags")
-        .select("event_id, stressful")
+        .select("event_id, stressful, reason")
         .lt("start_at", to.toISOString())
         .gt("end_at", from.toISOString());
       if (error) throw error;
@@ -80,16 +89,61 @@ export function useEventFlags(day: Date) {
   });
 }
 
+export function useRecurringBlocks() {
+  return useQuery({
+    queryKey: ["recurring_blocks"],
+    queryFn: async (): Promise<RecurringBlock[]> => {
+      const { data, error } = await supabase
+        .from("recurring_blocks")
+        .select("id, kind, label, start_time, end_time, days, active")
+        .eq("active", true)
+        .limit(200);
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useRecurringSkips(day: Date) {
+  const key = localDateKey(day);
+  return useQuery({
+    queryKey: ["recurring_skips", key],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("recurring_skips").select("block_id, local_date").eq("local_date", key);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCheckinDismissals(day: Date) {
+  const key = localDateKey(day);
+  return useQuery({
+    queryKey: ["checkin_dismissals", key],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("checkin_dismissals").select("event_id").eq("local_date", key);
+      if (error) throw error;
+      return new Set(data.map((d) => d.event_id));
+    },
+  });
+}
+
 export function useDayEvents(day: Date, keywords: string[]) {
   const g = useGoogleDay(day);
   const m = useManualBlocks(day);
   const f = useEventFlags(day);
-  const flags = new Map((f.data ?? []).map((x) => [x.event_id, x.stressful]));
+  const r = useRecurringBlocks();
+  const sk = useRecurringSkips(day);
+  const flags = new Map((f.data ?? []).map((x) => [x.event_id, x]));
   const events: DayEvent[] = [
     ...(g.data?.events ?? []).map((e) => ({ ...e, source: "google" as const, kind: "meeting" as const })),
+    ...expandRecurring(r.data ?? [], sk.data ?? [], day).map((e) => ({ ...e, recurringId: e.id.split(":")[1]!, label: e.title })),
     ...(m.data ?? []).map((b) => ({
       id: `manual:${b.id}`,
-      title: b.kind === "meeting" ? "Meeting" : "Focus",
+      manualId: b.id,
+      label: b.label,
+      title: b.label || (b.kind === "meeting" ? "Meeting" : "Focus"),
       start: b.start_at,
       end: b.end_at,
       allDay: false,
@@ -98,16 +152,18 @@ export function useDayEvents(day: Date, keywords: string[]) {
     })),
   ]
     .map((e) => {
-      const flagged = flags.has(e.id) ? flags.get(e.id)! : null;
+      const fl = flags.get(e.id);
+      const flagged = fl ? fl.stressful : null;
       const auto = e.kind === "meeting" && e.source === "google" && matchesKeywords(e.title, keywords);
-      return { ...e, flagged, stressful: e.kind === "meeting" && (flagged ?? auto) };
+      const stressful = e.kind === "meeting" && (flagged ?? auto);
+      return { ...e, flagged, stressful, reason: stressful ? ((fl?.reason as StressReason | null) ?? null) : null };
     })
     .sort((a, b) => a.start.localeCompare(b.start));
   return {
     events,
     status: g.data?.status ?? (g.isError ? "error" : "loading"),
     offline: !!g.data?.offline,
-    isLoading: g.isLoading || m.isLoading || f.isLoading,
+    isLoading: g.isLoading || m.isLoading || f.isLoading || r.isLoading || sk.isLoading,
     googleError: g.isError,
   };
 }
@@ -122,12 +178,12 @@ export function useDayLogs(day: Date) {
         supabase.from("energy_ratings").select("id, kind, rating, event_id, primed, at").eq("local_date", key),
         supabase
           .from("focus_sessions")
-          .select("id, actual_min, started_at")
+          .select("id, actual_min, started_at, intention")
           .gte("started_at", from.toISOString())
           .lt("started_at", to.toISOString()),
         supabase
           .from("prime_sessions")
-          .select("id, event_id, at")
+          .select("id, event_id, at, pattern, duration_s")
           .gte("at", from.toISOString())
           .lt("at", to.toISOString()),
       ]);

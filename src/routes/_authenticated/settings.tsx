@@ -191,6 +191,17 @@ function DaySection({ s }: { s: Settings }) {
       </div>
       {!hoursOk && <p id="hours-err" role="alert" className="text-sm text-destructive">Work end must be after work start. Not saved.</p>}
       <Stepper label="Minimum focus length" value={s.min_focus_min} unit="min" min={10} max={120} step={5} onChange={(v) => save.mutate({ min_focus_min: v })} />
+      <Stepper label="Daily focus target" value={s.daily_focus_target_min} unit="min" min={30} max={480} step={30} onChange={(v) => save.mutate({ daily_focus_target_min: v })} />
+      <div className="space-y-1.5">
+        <span className="font-medium" id="buf-label">Buffer after meetings</span>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="buf-label">
+          {[0, 5, 10].map((m) => (
+            <Button key={m} role="radio" aria-checked={s.meeting_buffer_min === m} variant={s.meeting_buffer_min === m ? "default" : "outline"} onClick={() => save.mutate({ meeting_buffer_min: m })}>
+              {m} min
+            </Button>
+          ))}
+        </div>
+      </div>
       <Stepper label="Prime lead time" value={s.prime_lead_min} unit="min" min={5} max={30} step={5} onChange={(v) => save.mutate({ prime_lead_min: v })} />
       <div className="space-y-1.5">
         <Label htmlFor="kw">Stressful-meeting keywords</Label>
