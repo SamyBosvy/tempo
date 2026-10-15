@@ -449,6 +449,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_history_month: {
+        Args: { _month: string; _tz: string }
+        Returns: Json
+      }
+      get_history_week: {
+        Args: {
+          _from: string
+          _offset?: number
+          _search?: string
+          _to: string
+          _type?: string
+        }
+        Returns: Json
+      }
       get_insights:
         | { Args: { _tz: string }; Returns: Json }
         | { Args: { _period: string; _tz: string }; Returns: Json }
