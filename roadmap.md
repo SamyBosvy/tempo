@@ -19,3 +19,7 @@
 
 # Today upgrade
 - [x] T1–T13 built, migrated and tested.
+
+# Focus upgrade
+- [x] F1–F13 built, migrated and tested.
+- [ ] Confirm the end notification while the phone is locked — needs the published app on a real phone.
