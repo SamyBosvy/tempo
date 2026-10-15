@@ -34,3 +34,8 @@
 - [x] P8 60-second reset (Today, back-to-back, app shortcut)
 - [x] P9 intention outcome on check-ins, History, export, Insights
 - [x] P10 coherent + extended exhale patterns
+
+# Insights upgrade (I1–I12)
+- [ ] Period-aware, gap-filled private aggregates and server-side findings.
+- [ ] Insights charts, comparison cards, and Monday weekly review.
+- [ ] Rule tests, temporary-data phone checks in both themes, cleanup and full suite.
