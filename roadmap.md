@@ -25,5 +25,5 @@
 - [ ] Confirm the end notification while the phone is locked — needs the published app on a real phone.
 
 # Prime upgrade
-- [ ] P1–P5 phase cues, quiet room, meeting context and remembered eyes-closed mode.
-- [ ] Test phase logic, full suite and signed-in phone views in both themes.
+- [x] P1–P5 phase cues, quiet room, meeting context and remembered eyes-closed mode.
+- [x] Test phase logic, full suite (75 tests), signed-in phone views in both themes and reduced motion; saved a real Prime session, read it back in History and removed it.
