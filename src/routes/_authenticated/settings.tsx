@@ -215,8 +215,8 @@ function DaySection({ s }: { s: Settings }) {
         </div>
       </div>
       {!hoursOk && <p id="hours-err" role="alert" className="text-sm text-destructive">Work end must be after work start. Not saved.</p>}
-      <Stepper label="Minimum focus length" value={s.min_focus_min} unit="min" min={10} max={120} step={5} onChange={(v) => save.mutate({ min_focus_min: v })} />
-      <Stepper label="Daily focus target" value={s.daily_focus_target_min} unit="min" min={30} max={480} step={30} onChange={(v) => save.mutate({ daily_focus_target_min: v })} />
+
+
       <div className="space-y-1.5">
         <span className="font-medium" id="buf-label">Buffer after meetings</span>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="buf-label">
@@ -227,8 +227,8 @@ function DaySection({ s }: { s: Settings }) {
           ))}
         </div>
       </div>
-      <Stepper label="Prime lead time" value={s.prime_lead_min} unit="min" min={5} max={30} step={5} onChange={(v) => save.mutate({ prime_lead_min: v })} />
-      <KeywordChips s={s} />
+
+
     </Section>
   );
 }
@@ -238,6 +238,8 @@ function FocusSection({ s }: { s: Settings }) {
   const [custom, setCustom] = useState(s.custom_interruption ?? "");
   return (
     <Section title="Focus">
+      <Stepper label="Daily focus target" value={s.daily_focus_target_min} unit="min" min={30} max={480} step={30} onChange={(v) => save.mutate({ daily_focus_target_min: v })} />
+      <Stepper label="Minimum focus length" value={s.min_focus_min} unit="min" min={10} max={120} step={5} onChange={(v) => save.mutate({ min_focus_min: v })} />
       <Toggle label="Keep screen awake during focus" checked={s.wake_lock} onChange={(v) => save.mutate({ wake_lock: v })} />
       <div className="space-y-1.5">
         <Label htmlFor="custom-int">Your own interruption reason</Label>
@@ -256,6 +258,7 @@ function BreathSection({ s }: { s: Settings }) {
   const save = useSaveSettings();
   return (
     <Section title="Breathing">
+      <Stepper label="Prime lead time" value={s.prime_lead_min} unit="min" min={5} max={30} step={5} onChange={(v) => save.mutate({ prime_lead_min: v })} />
       <div className="grid gap-2" role="radiogroup" aria-label="Default pattern">
         {(Object.keys(PATTERNS) as BreathPattern[]).map((p) => (
           <Button variant="outline" key={p} role="radio" aria-checked={s.breath_pattern === p} onClick={() => save.mutate({ breath_pattern: p })}
@@ -281,6 +284,7 @@ function CalendarSection({ s }: { s: Settings }) {
   const connected = cals.data?.status === "connected";
   return (
     <Section title="Google Calendar">
+      <KeywordChips s={s} />
       {cals.isLoading ? (
         <div role="status" aria-busy="true" className="h-12 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
       ) : connected ? (
@@ -416,7 +420,7 @@ function NotificationSection({s}:{s:Settings}) {
 }
 function AppearanceSection({s}:{s:Settings}) {
   const save=useSaveSettings();
-  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme[0].toUpperCase()+theme.slice(1)}</Button>)}</div></Section>;
+  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme.charAt(0).toUpperCase()+theme.slice(1)}</Button>)}</div></Section>;
 }
 function KeywordChips({s}:{s:Settings}) {
   const save=useSaveSettings(),[input,setInput]=useState(''),[error,setError]=useState('');
