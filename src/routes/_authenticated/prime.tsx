@@ -3,7 +3,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, useSaveSettings, type Settings } from "@/lib/settings";
-import { PATTERNS, phaseAt, type BreathPattern } from "@/lib/breath";
+import { PATTERNS, isBreathPattern, phaseAt, type BreathPattern } from "@/lib/breath";
+import { clearPrime, isStalePrime, loadPrime, primeProgress, QUICK_PRIME_MIN, savePrime, type RunningPrime } from "@/lib/prime-session";
+import { useWakeLock, wakeLockWanted } from "@/lib/focus-extras";
 import { BreathCues } from "@/lib/breath-cues";
 import { setImmersive } from "@/lib/immersive";
 import { useDayEvents } from "@/lib/day-data";
@@ -17,7 +19,7 @@ import { PageTitle, ScreenSkeleton } from "@/components/tempo/bits";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/prime")({
-  validateSearch: z.object({ event: z.string().optional(), at: z.string().optional() }),
+  validateSearch: z.object({ event: z.string().optional(), at: z.string().optional(), auto: z.coerce.number().optional(), quick: z.coerce.number().optional() }),
   head: () => ({
     meta: [
       { title: "Prime · Tempo" },
@@ -47,43 +49,91 @@ function MeetingContext({ eventId, at, keywords }: { eventId: string; at: string
 }
 
 function PrimeInner({ settings }: { settings: Settings }) {
-  const { event, at } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const save = useSaveSettings();
-  const [pattern, setPattern] = useState<BreathPattern>(settings.breath_pattern in PATTERNS ? settings.breath_pattern as BreathPattern : "sigh");
-  const [minutes, setMinutes] = useState(settings.breath_minutes);
-  const [stage, setStage] = useState<"choose" | "breathe" | "intent">("choose");
-  const [startedAt, setStartedAt] = useState(0);
+  const defaultPattern: BreathPattern = isBreathPattern(settings.breath_pattern) ? settings.breath_pattern : "sigh";
+  const [pattern, setPattern] = useState<BreathPattern>(defaultPattern);
+  const [minutes, setMinutes] = useState(search.quick ? QUICK_PRIME_MIN : settings.breath_minutes);
+  const [ctx, setCtx] = useState({ event: search.event ?? null, at: search.at ?? null, quick: !!search.quick });
+  const [stage, setStage] = useState<"loading" | "choose" | "starting" | "breathe" | "intent">("loading");
+  const [countdown, setCountdown] = useState(3);
   const [t, setT] = useState(0);
   const [intent, setIntent] = useState("");
+  const run = useRef<RunningPrime | null>(null);
   const cues = useRef<BreathCues | null>(null);
   const lastPhase = useRef(-1);
   const cur = phaseAt(pattern, t);
+  const { event, at } = ctx;
+  useWakeLock(wakeLockWanted(settings.wake_lock, stage === "breathe", false, true));
 
   function stopCues() {
     cues.current?.stop();
     cues.current = null;
   }
 
+  // P6 resume, or P7/P8 auto-start, decided once after hydration.
+  useEffect(() => {
+    const stored = loadPrime();
+    if (stored && !isStalePrime(stored, Date.now())) {
+      run.current = stored;
+      setPattern(stored.pattern);
+      setMinutes(stored.minutes);
+      setCtx({ event: stored.event, at: stored.at, quick: stored.quick });
+      const prog = primeProgress(stored, Date.now());
+      setT(prog.elapsed);
+      setStage(prog.done ? "intent" : "breathe");
+      return;
+    }
+    if (stored) clearPrime();
+    setStage(search.auto || search.quick ? "starting" : "choose");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "starting") return;
+    setCountdown(3);
+    const startAt = Date.now();
+    const id = window.setInterval(() => {
+      const left = 3 - Math.floor((Date.now() - startAt) / 1000);
+      if (left <= 0) {
+        window.clearInterval(id);
+        begin();
+      } else setCountdown(left);
+    }, 200);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   useEffect(() => {
     if (stage !== "breathe") return;
     setImmersive(true);
     document.documentElement.classList.add("prime-room");
-    const visibility = () => { if (document.visibilityState === "hidden") stopCues(); };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") stopCues();
+      else if (!cues.current) {
+        cues.current = new BreathCues(settings.eyes_closed, settings.vibration);
+        lastPhase.current = -1;
+      }
+    };
     document.addEventListener("visibilitychange", visibility);
+    if (!cues.current) cues.current = new BreathCues(settings.eyes_closed, settings.vibration);
     const tick = () => {
-      const elapsed = Math.min(minutes * 60, (Date.now() - startedAt) / 1000);
-      setT(elapsed);
-      if (elapsed >= minutes * 60) {
+      const r = run.current;
+      if (!r) return;
+      const prog = primeProgress(r, Date.now());
+      setT(prog.elapsed);
+      if (prog.done) {
         stopCues();
         setStage("intent");
       }
     };
+    tick();
     const id = window.setInterval(tick, 100);
     return () => {
       window.clearInterval(id);
@@ -92,7 +142,7 @@ function PrimeInner({ settings }: { settings: Settings }) {
       setImmersive(false);
       document.documentElement.classList.remove("prime-room");
     };
-  }, [stage, startedAt, minutes]);
+  }, [stage, settings.eyes_closed, settings.vibration]);
 
   useEffect(() => {
     if (stage !== "breathe" || cur.occurrence === lastPhase.current) return;
@@ -102,19 +152,32 @@ function PrimeInner({ settings }: { settings: Settings }) {
 
   function begin() {
     stopCues();
-    // AudioContext creation and resume happen in this user gesture.
+    // When called from a tap, AudioContext creation and resume happen in this user gesture.
     cues.current = new BreathCues(settings.eyes_closed, settings.vibration);
     const first = phaseAt(pattern, 0);
     cues.current.phase(first.phase.kind, first.remaining);
     lastPhase.current = first.occurrence;
-    setStartedAt(Date.now());
+    const r: RunningPrime = { pattern, minutes, startedAt: Date.now(), event, at, quick: ctx.quick };
+    run.current = r;
+    savePrime(r);
     setT(0);
     setStage("breathe");
   }
 
+  function cancelStart() {
+    setCtx((c) => ({ ...c, quick: false }));
+    setMinutes(settings.breath_minutes);
+    setStage("choose");
+  }
+
   function finishEarly() {
     stopCues();
-    setT(Math.min(minutes * 60, (Date.now() - startedAt) / 1000));
+    const r = run.current;
+    if (r) {
+      r.endedAt = Date.now();
+      savePrime(r);
+      setT(primeProgress(r, r.endedAt).elapsed);
+    }
     setStage("intent");
   }
 
@@ -125,21 +188,41 @@ function PrimeInner({ settings }: { settings: Settings }) {
       intention: intent.trim().slice(0, 200) || null,
       at: new Date().toISOString(),
     });
+    clearPrime();
+    run.current = null;
     void qc.invalidateQueries({ queryKey: ["daylogs", localDateKey(new Date())] });
     void qc.invalidateQueries({ queryKey: ["insights"] });
     void qc.invalidateQueries({ queryKey: ["history"] });
     void navigate({ to: "/today" });
   }
 
+  if (stage === "loading") return <ScreenSkeleton rows={3} />;
+
+  if (stage === "starting") return (
+    <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-6 text-center">
+      <div className="space-y-1">
+        <PageTitle>{ctx.quick ? "60-second reset" : "Starting…"}</PageTitle>
+        {event && <MeetingContext eventId={event} at={at ?? undefined} keywords={settings.keywords} />}
+        <p className="text-muted-foreground">{PATTERNS[pattern].name} · {minutes} min</p>
+      </div>
+      <div role="timer" aria-live="polite" className="font-display text-6xl font-semibold tabular">{countdown}</div>
+      <div className="grid w-full max-w-72 gap-2">
+        <Button size="lg" onClick={begin}>Start now</Button>
+        <Button variant="outline" onClick={cancelStart}>Cancel</Button>
+      </div>
+    </div>
+  );
+
   if (stage === "choose") return (
     <div className="space-y-5">
-      <PageTitle>{at && Number.isFinite(new Date(at).getTime()) ? `Before ${fmtTime(at)}` : "Prime"}</PageTitle>
+      <PageTitle>{ctx.quick ? "60-second reset" : at && Number.isFinite(new Date(at).getTime()) ? `Before ${fmtTime(at)}` : "Prime"}</PageTitle>
       <div className="grid gap-2" role="radiogroup" aria-label="Breathing pattern">
         {(Object.keys(PATTERNS) as BreathPattern[]).map((p) => (
           <Button key={p} variant="outline" role="radio" aria-checked={pattern === p} onClick={() => setPattern(p)}
             className={cn("h-auto flex-col items-start gap-0 rounded-2xl p-4 text-left whitespace-normal", pattern === p ? "border-primary bg-accent" : "border-border bg-card")}>
             <span className="font-semibold">{PATTERNS[p].name}</span>
             <span className="text-sm font-normal text-muted-foreground">{PATTERNS[p].blurb}</span>
+            {PATTERNS[p].when && <span className="text-sm font-normal text-accent-text">{PATTERNS[p].when}</span>}
           </Button>
         ))}
       </div>
@@ -194,7 +277,7 @@ function PrimeInner({ settings }: { settings: Settings }) {
     <div className="space-y-5">
       <div className="space-y-2">
         <PageTitle>Settled.</PageTitle>
-        {event && <MeetingContext eventId={event} at={at} keywords={settings.keywords} />}
+        {event && <MeetingContext eventId={event} at={at ?? undefined} keywords={settings.keywords} />}
         <p>You're ready. Walk in steady.</p>
       </div>
       <div className="space-y-1.5">

@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/settings";
+import { afterMeetingRating, INTENT_OUTCOMES, primeIntents, type IntentOutcome } from "@/lib/checkin";
 import { useCheckinDismissals, useDayEvents, useDayLogs, type DayEvent, type StressReason } from "@/lib/day-data";
 import {
   atLocal,
@@ -155,7 +156,7 @@ function Today() {
     if (p) return { kind: "prime" as const, label: "Prime now", e: p };
     if (checkinsDue.length) return { kind: "rate" as const, label: "Rate the meeting" };
     if (currentWindow) return { kind: "focus" as const, label: `Start focus · until ${fmtTime(currentWindow.end)}`, slot: currentWindow };
-    return null;
+    return { kind: "reset" as const, label: "60-second reset" };
   })();
 
   const target = settings.daily_focus_target_min;
@@ -213,7 +214,7 @@ function Today() {
 
       {isToday && <PrimeCards due={primeDue} leadMin={settings.prime_lead_min} now={now} />}
       {isToday && <BackToBack events={timed} workStart={workStart} workEnd={workEnd} now={nowDate} dayKey={dayKey} />}
-      {isToday && <CheckIns due={checkinsDue} primed={primedIds} dayKey={dayKey} />}
+      {isToday && <CheckIns due={checkinsDue} primed={primedIds} intents={primeIntents(logs.data?.primes ?? [])} dayKey={dayKey} />}
 
       {isToday && best && <BestWindow slot={best} now={nowDate} />}
 
@@ -251,6 +252,10 @@ function Today() {
           {fab.kind === "prime" ? (
             <Button asChild size="lg" className="pointer-events-auto w-full shadow-glow">
               <Link to="/prime" search={{ event: fab.e.id, at: fab.e.start }}><Wind /> {fab.label}</Link>
+            </Button>
+          ) : fab.kind === "reset" ? (
+            <Button asChild size="lg" variant="outline" className="pointer-events-auto w-full bg-card">
+              <Link to="/prime" search={{ quick: 1 }}><Wind /> {fab.label}</Link>
             </Button>
           ) : fab.kind === "rate" ? (
             <Button size="lg" className="pointer-events-auto w-full shadow-glow" onClick={() => document.getElementById("checkins")?.scrollIntoView({ block: "center" })}>
@@ -382,7 +387,7 @@ function BackToBack({ events, workStart, workEnd, now, dayKey }: { events: DayEv
       <p className="font-semibold">No break until {fmtTime(run.end)}. Two minutes now?</p>
       <div className="grid grid-cols-2 gap-2">
         <Button asChild>
-          <Link to="/prime"><Wind /> Quick prime</Link>
+          <Link to="/prime" search={{ quick: 1 }}><Wind /> Quick prime</Link>
         </Button>
         <Button
           variant="ghost"
@@ -398,7 +403,8 @@ function BackToBack({ events, workStart, workEnd, now, dayKey }: { events: DayEv
   );
 }
 
-function CheckIns({ due, primed, dayKey }: { due: DayEvent[]; primed: Set<string | null>; dayKey: string }) {
+function CheckIns({ due, primed, intents, dayKey }: { due: DayEvent[]; primed: Set<string | null>; intents: Map<string, string>; dayKey: string }) {
+  const [outcome, setOutcome] = useState<Record<string, IntentOutcome>>({});
   const qc = useQueryClient();
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
@@ -439,21 +445,29 @@ function CheckIns({ due, primed, dayKey }: { due: DayEvent[]; primed: Set<string
             </div>
             {isOpen && (
               <>
+                {intents.get(e.id) && (
+                  <div className="space-y-2">
+                    <p className="break-words text-sm">You wanted: <span className="font-semibold">{intents.get(e.id)}</span></p>
+                    <p className="text-sm text-muted-foreground">Did you get it?</p>
+                    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Did you get it?">
+                      {INTENT_OUTCOMES.map((o) => (
+                        <Button key={o.value} variant="outline" role="radio" aria-checked={outcome[e.id] === o.value}
+                          className={cn(outcome[e.id] === o.value ? "border-primary bg-accent" : "border-border bg-card")}
+                          onClick={() => setOutcome({ ...outcome, [e.id]: o.value })}>{o.label}</Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <Input aria-label="Optional note" placeholder="One line, if you like" maxLength={200} className="h-12" value={note[e.id] ?? ""} onChange={(x) => setNote({ ...note, [e.id]: x.target.value })} />
                 <EnergyPicker
                   label="Energy after the meeting"
                   value={null}
                   onChange={(v) => {
-                    enqueue("energy_ratings", {
-                      id: crypto.randomUUID(),
-                      kind: "after_meeting",
-                      rating: v,
-                      note: note[e.id]?.trim() || null,
-                      event_id: e.id,
-                      primed: primed.has(e.id),
-                      local_date: dayKey,
-                      at: new Date().toISOString(),
-                    });
+                    enqueue("energy_ratings", afterMeetingRating({
+                      id: crypto.randomUUID(), rating: v, note: note[e.id], eventId: e.id,
+                      primed: primed.has(e.id), intention: intents.get(e.id) ?? null,
+                      outcome: outcome[e.id] ?? null, dayKey, at: new Date().toISOString(),
+                    }));
                     setOpen(null);
                     qc.invalidateQueries({ queryKey: ["daylogs", dayKey] });
                   }}

@@ -1,8 +1,8 @@
-export type BreathPattern = "sigh" | "box" | "478";
+export type BreathPattern = "sigh" | "box" | "478" | "coherent" | "extended";
 export type PhaseKind = "inhale" | "hold" | "exhale";
 export type Phase = { label: string; seconds: number; scale: number; kind: PhaseKind };
 
-export const PATTERNS: Record<BreathPattern, { name: string; blurb: string; phases: Phase[] }> = {
+export const PATTERNS: Record<BreathPattern, { name: string; blurb: string; when?: string; phases: Phase[] }> = {
   sigh: {
     name: "Physiological sigh",
     blurb: "Two inhales through the nose, one long exhale.",
@@ -31,7 +31,29 @@ export const PATTERNS: Record<BreathPattern, { name: string; blurb: string; phas
       { label: "Exhale", seconds: 8, scale: 0.4, kind: "exhale" },
     ],
   },
+  coherent: {
+    name: "Coherent breathing",
+    blurb: "5.5 seconds in, 5.5 seconds out.",
+    when: "Steady and even — good before long meetings.",
+    phases: [
+      { label: "Inhale", seconds: 5.5, scale: 1, kind: "inhale" },
+      { label: "Exhale", seconds: 5.5, scale: 0.4, kind: "exhale" },
+    ],
+  },
+  extended: {
+    name: "Extended exhale",
+    blurb: "Four in, eight out.",
+    when: "Calms you down fast.",
+    phases: [
+      { label: "Inhale", seconds: 4, scale: 1, kind: "inhale" },
+      { label: "Exhale", seconds: 8, scale: 0.4, kind: "exhale" },
+    ],
+  },
 };
+
+export function isBreathPattern(p: string): p is BreathPattern {
+  return Object.prototype.hasOwnProperty.call(PATTERNS, p);
+}
 
 export function phaseAt(pattern: BreathPattern, elapsedS: number) {
   const phases = PATTERNS[pattern].phases;

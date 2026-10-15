@@ -255,6 +255,7 @@ function BreathSection({ s }: { s: Settings }) {
           <button key={p} role="radio" aria-checked={s.breath_pattern === p} onClick={() => save.mutate({ breath_pattern: p })}
             className={cn("tap rounded-xl border px-3 text-left font-semibold", s.breath_pattern === p ? "border-primary bg-accent" : "border-border")}>
             {PATTERNS[p].name}
+            {PATTERNS[p].when && <span className="block text-sm font-normal text-muted-foreground">{PATTERNS[p].when}</span>}
           </button>
         ))}
       </div>

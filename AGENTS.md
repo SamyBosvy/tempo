@@ -29,3 +29,4 @@
 - Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, and fire once per target via a `signalled` flag — so reloads or tab switches never double-chime.
 - Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
 - Prime derives phase transitions from elapsed timestamps; phase audio is created by Begin and disposed on finish, route exit or tab hiding, so background tabs never keep playing cues.
+- Running prime state lives in localStorage (src/lib/prime-session.ts) and is computed from startedAt, so locks and reloads resume at the right phase.

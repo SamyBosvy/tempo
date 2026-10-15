@@ -1,3 +1,4 @@
+import { OUTCOME_LABEL, type IntentOutcome } from "@/lib/checkin";
 import { createFileRoute } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/history")({
 type Entry =
   | { type: "session"; id: string; at: string; actual_min: number; intention: string | null; done_note: string | null; energy_before: number | null; energy_after: number | null; interruptions: number }
   | { type: "prime"; id: string; at: string; pattern: string; duration_s: number; intention: string | null }
-  | { type: "rating"; id: string; at: string; kind: string; rating: number; note: string | null };
+  | { type: "rating"; id: string; at: string; kind: string; rating: number; note: string | null; intent_outcome: string | null };
 
 const WEEK = 7;
 const REASONS: Record<string, string> = { sigh: "Physiological sigh", box: "Box breathing", "478": "4-7-8" };
@@ -48,7 +49,7 @@ function History() {
       const [s, p, r] = await Promise.all([
         supabase.from("focus_sessions").select("id, started_at, actual_min, intention, done_note, energy_before, energy_after, interruptions(count)").gte("started_at", from.toISOString()).lt("started_at", to.toISOString()).order("started_at", { ascending: false }),
         supabase.from("prime_sessions").select("id, at, pattern, duration_s, intention").gte("at", from.toISOString()).lt("at", to.toISOString()),
-        supabase.from("energy_ratings").select("id, at, kind, rating, note").gte("at", from.toISOString()).lt("at", to.toISOString()),
+        supabase.from("energy_ratings").select("id, at, kind, rating, note, intent_outcome").gte("at", from.toISOString()).lt("at", to.toISOString()),
       ]);
       if (s.error) throw s.error;
       if (p.error) throw p.error;
@@ -158,7 +159,7 @@ function Line({ e }: { e: Entry }) {
   return (
     <>
       <div className="font-semibold">{e.kind === "morning" ? "Morning energy" : "After meeting"} · {e.rating}</div>
-      <div className="text-sm text-muted-foreground">{fmtTime(e.at)}{e.note ? ` · ${e.note}` : ""}</div>
+      <div className="text-sm text-muted-foreground">{fmtTime(e.at)}{e.intent_outcome && e.intent_outcome in OUTCOME_LABEL ? ` · ${OUTCOME_LABEL[e.intent_outcome as IntentOutcome]}` : ""}{e.note ? ` · ${e.note}` : ""}</div>
     </>
   );
 }
