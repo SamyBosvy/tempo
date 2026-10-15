@@ -50,6 +50,13 @@
       "when": 1792037376449,
       "tag": "0006_history_browsing",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792099587182,
+      "tag": "0007_history_search_system_theme",
+      "breakpoints": true
     }
   ]
 }

@@ -488,6 +488,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      search_history: {
+        Args: { _offset?: number; _search?: string; _type?: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "owner" | "member"
