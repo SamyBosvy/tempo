@@ -61,6 +61,7 @@ export type Database = {
           at: string
           event_id: string | null
           id: string
+          intent_outcome: string | null
           kind: string
           local_date: string
           note: string | null
@@ -72,6 +73,7 @@ export type Database = {
           at: string
           event_id?: string | null
           id?: string
+          intent_outcome?: string | null
           kind: string
           local_date: string
           note?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           at?: string
           event_id?: string | null
           id?: string
+          intent_outcome?: string | null
           kind?: string
           local_date?: string
           note?: string | null
