@@ -15,6 +15,13 @@
       "when": 1792030078844,
       "tag": "0001_today_upgrade",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792030653596,
+      "tag": "0002_focus_upgrade",
+      "breakpoints": true
     }
   ]
 }
