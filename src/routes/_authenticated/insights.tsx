@@ -1,233 +1,52 @@
-import { cn } from "@/lib/utils";
-import { createFileRoute } from "@tanstack/react-router";
-import { localDateFromKey } from "@/lib/fix-rules";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { getCalendarEvents } from "@/lib/google.functions";
-import { meetingMinutes, localDateKey, startOfLocalDay, atLocal, type CalEvent } from "@/lib/timeline";
-import { useSettings } from "@/lib/settings";
-import { Card, PageTitle, ScreenSkeleton } from "@/components/tempo/bits";
-
-export const Route = createFileRoute("/_authenticated/insights")({
-  head: () => ({
-    meta: [
-      { title: "Insights · Tempo" },
-      { name: "description", content: "When you actually work best." },
-      { property: "og:title", content: "Insights · Tempo" },
-      { property: "og:description", content: "When you actually work best." },
-    ],
-  }),
-  component: Insights,
-});
-
-type InsightData = {
-  session_count: number;
-  rating_count: number;
-  by_hour: { hour: number; minutes: number; avg_energy: number | null; count: number }[];
-  by_day: { day: string; minutes: number }[];
-  by_week: { week: string; minutes: number }[];
-  energy_by_hour: { hour: number; avg: number }[];
-  primed: { primed_n: number; primed_avg: number | null; unprimed_n: number; unprimed_avg: number | null };
-  intent_outcomes?: { yes: number; partly: number; no: number };
-  interruptions: { source: "self" | "external" | "unknown"; reason: string; label: string | null; count: number }[];
-};
-
-const REASON: Record<string, string> = { meeting: "Meeting ran over", message: "Message/phone", distracted: "Distracted", other: "Other" };
-const axis = { stroke: "var(--color-muted-foreground)", fontSize: 12 };
-
-function Insights() {
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const q = useQuery({
-    queryKey: ["insights", tz],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_insights", { _tz: tz });
-      if (error) throw error;
-      return data as unknown as InsightData;
-    },
-  });
-  if (q.isLoading) return <ScreenSkeleton rows={4} />;
-  if (q.isError || !q.data) return <p role="alert">Couldn't load insights. Try again.</p>;
-  const d = q.data;
-  if (d.session_count < 5 && d.rating_count < 5)
-    return (
-      <div>
-        <PageTitle>Insights</PageTitle>
-        <Card><p>Keep going. Patterns show after 5 sessions.</p></Card>
-      </div>
-    );
-
-  const maxMin = Math.max(1, ...d.by_hour.map((h) => h.minutes));
-  return (
-    <div className="space-y-4">
-      <PageTitle>Insights</PageTitle>
-
-      <Card>
-        <h2 className="mb-3 font-semibold">Best hours for focus</h2>
-        {d.by_hour.length === 0 ? <Empty /> : (
-          <div className="grid grid-cols-6 gap-1.5" role="list">
-            {Array.from({ length: 24 }, (_, h) => h).filter((h) => h >= 6 && h <= 23).map((h) => {
-              const row = d.by_hour.find((x) => x.hour === h);
-              const intensity = row ? 0.15 + 0.85 * (row.minutes / maxMin) : 0;
-              return (
-                <div role="listitem" key={h} className="relative flex h-14 flex-col items-center justify-center rounded-lg border border-subtle text-xs"
-                  aria-label={`${h}:00, ${row?.minutes ?? 0} minutes${row?.avg_energy ? `, energy ${row.avg_energy}` : ""}`}>
-                  <div aria-hidden className="absolute inset-0 rounded-lg bg-primary" style={{ opacity: intensity }} />
-                  <span className="relative font-semibold tabular">{String(h).padStart(2, "0")}</span>
-                  <span className="relative tabular text-[11px]">{row?.avg_energy ?? "–"}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <p className="mt-2 text-xs text-muted-foreground">Shade = minutes focused. Number = average energy after.</p>
-      </Card>
-
-      <Card>
-        <h2 className="mb-3 font-semibold">Focus minutes per day</h2>
-        {d.by_day.length === 0 ? <Empty /> : (
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={d.by_day.map((x) => ({ ...x, label: localDateFromKey(String(x.day)).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
-              <CartesianGrid stroke="var(--color-subtle)" vertical={false} />
-              <XAxis dataKey="label" tick={axis} interval="preserveStartEnd" />
-              <YAxis tick={axis} width={32} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
-              <Bar dataKey="minutes" name="Focus min" fill="var(--color-chart-1)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </Card>
-
-      <Card>
-        <h2 className="mb-3 font-semibold">Focus minutes per week</h2>
-        {d.by_week.length === 0 ? <Empty /> : (
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={d.by_week.map((x) => ({ ...x, label: localDateFromKey(String(x.week)).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
-              <XAxis dataKey="label" tick={axis} />
-              <YAxis tick={axis} width={32} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
-              <Bar dataKey="minutes" name="Focus min" fill="var(--color-chart-1)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </Card>
-
-      <MeetingsVsFocus byDay={d.by_day} />
-
-      <Card>
-        <h2 className="mb-3 font-semibold">Energy across the day</h2>
-        {d.energy_by_hour.length === 0 ? <Empty /> : (
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={d.energy_by_hour.map((x) => ({ ...x, label: `${String(x.hour).padStart(2, "0")}:00` }))}>
-              <CartesianGrid stroke="var(--color-subtle)" vertical={false} />
-              <XAxis dataKey="label" tick={axis} />
-              <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={axis} width={24} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
-              <Line type="monotone" dataKey="avg" name="Energy" stroke="var(--color-chart-2)" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </Card>
-
-      {d.intent_outcomes && d.intent_outcomes.yes + d.intent_outcomes.partly + d.intent_outcomes.no > 0 && (() => {
-        const o = d.intent_outcomes;
-        const n = o.yes + o.partly + o.no;
-        return (
-          <Card>
-            <h2 className="mb-2 font-semibold">Did you get what you wanted?</h2>
-            <p className="text-sm text-muted-foreground">Primed meetings with an intention ({n}).</p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              {([["yes", "Yes"], ["partly", "Partly"], ["no", "No"]] as const).map(([k, label]) => (
-                <div key={k} className="rounded-xl bg-secondary p-3"><div className={cn("text-2xl font-semibold tabular", k === "yes" && "text-gold-text")}>{Math.round((o[k] / n) * 100)}%</div><div className="text-xs">{label}</div></div>
-              ))}
-            </div>
-          </Card>
-        );
-      })()}
-
-      {d.primed.primed_n >= 3 && d.primed.unprimed_n >= 3 && (
-        <Card>
-          <h2 className="mb-2 font-semibold">Primed vs not primed</h2>
-          <p className="text-sm text-muted-foreground">Average energy after stressful meetings.</p>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-xl bg-secondary p-3"><div className="text-2xl font-semibold text-gold-text tabular">{d.primed.primed_avg}</div><div className="text-xs">Primed ({d.primed.primed_n})</div></div>
-            <div className="rounded-xl bg-secondary p-3"><div className="text-2xl font-semibold tabular">{d.primed.unprimed_avg}</div><div className="text-xs">Not primed ({d.primed.unprimed_n})</div></div>
-          </div>
-        </Card>
-      )}
-
-      <Card>
-        <h2 className="mb-3 font-semibold">Interruptions</h2>
-        {d.interruptions.length === 0 ? <p className="text-sm text-muted-foreground">None logged.</p> : (
-          <div className="space-y-4">
-            {(["self", "external", "unknown"] as const).map((src) => {
-              const rows = d.interruptions.filter((i) => i.source === src).sort((a, b) => b.count - a.count);
-              if (!rows.length) return null;
-              return (
-                <div key={src}>
-                  <h3 className="mb-1 text-sm font-semibold text-muted-foreground">{src === "self" ? "Self" : src === "external" ? "External" : "Not specified"}</h3>
-                  <ul className="space-y-2">
-                    {rows.map((i) => (
-                      <li key={`${i.reason}-${i.label ?? ""}`} className="flex justify-between"><span>{i.label ?? REASON[i.reason] ?? i.reason}</span><span className="tabular font-semibold">{i.count}</span></li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
+import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, ReferenceLine } from 'recharts';
+import { Card, PageTitle, ScreenSkeleton } from '@/components/tempo/bits';
+import { Button } from '@/components/ui/button';
+import { WeeklyReviewContent } from '@/components/tempo/WeeklyReview';
+import { useInsights, useInsightCalendar } from '@/lib/insights-data';
+import { highMeetingLoad, hourLabel, periodLabel, REASON, signed, type Period, type Summary } from '@/lib/insights-rules';
+import { localDateFromKey } from '@/lib/fix-rules';
+import { cn } from '@/lib/utils';
+export const Route=createFileRoute('/_authenticated/insights')({head:()=>({meta:[{title:'Insights · Tempo'},{name:'description',content:'Your focus, energy and weekly patterns.'},{property:'og:title',content:'Insights · Tempo'},{property:'og:description',content:'Your focus, energy and weekly patterns.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'},{name:'robots',content:'noindex, nofollow'}]}),component:Insights});
+const axis={fill:'var(--color-muted-foreground)',fontSize:11};
+const tip={background:'var(--color-card)',color:'var(--color-foreground)',border:'1px solid var(--color-border)',borderRadius:8};
+const dateLabel=(d:string)=>localDateFromKey(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+function Evidence({title,children}:{title:string;children:ReactNode}){return <Card className="min-w-0"><h2 className="mb-3 font-semibold">{title}</h2>{children}</Card>;}
+function Empty({children='Nothing logged in this period.'}:{children?:ReactNode}){return <p className="text-sm text-muted-foreground">{children}</p>;}
+function Chart({children}:{children:React.ReactElement}){return <div className="h-52 min-w-0" role="img"><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div>;}
+function Insights(){
+ const [period,setPeriod]=useState<Period>('30');
+ useEffect(()=>{try{const p=localStorage.getItem('tempo.insights.period');if(p==='7'||p==='30'||p==='all')setPeriod(p);}catch{/* optional storage */}},[]);
+ const q=useInsights(period),cal=useInsightCalendar(q.data);
+ const choose=(p:Period)=>{setPeriod(p);try{localStorage.setItem('tempo.insights.period',p);}catch{/* optional storage */}};
+ const d=q.data,known=cal.data?.status==='connected';
+ const meetingMap=new Map(cal.data?.days.map(x=>[x.day,x.minutes])??[]);
+ const daily=d?.by_day.map(x=>({label:dateLabel(x.day),focus:x.minutes/60,meetings:known?(meetingMap.get(x.day)??0)/60:undefined}))??[];
+ const weeks=cal.data?.weeks.filter(w=>d && w.week>=d.by_week[0]?.week)??[];
+ const lastLoad=cal.data?.weeks.find(w=>w.week===d?.last_week.start)?.load??null;
+ return <div className="space-y-4 min-w-0"><PageTitle>Insights</PageTitle>
+  <div role="group" aria-label="Insights period" className="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">{(['7','30','all'] as const).map(p=><Button key={p} variant={period===p?'default':'ghost'} className="px-1 text-sm" aria-pressed={period===p} onClick={()=>choose(p)}>{p==='all'?'All':`${p} days`}</Button>)}</div>
+  {q.isLoading?<ScreenSkeleton rows={4}/>:q.isError||!d?<p role="alert">Couldn't load insights. <Button variant="link" onClick={()=>q.refetch()}>Try again</Button></p>:<>
+  <Findings d={d} period={period}/>
+  {d.session_count<5&&d.rating_count<5&&<Card><p>{d.session_count} of 5 sessions — {5-d.session_count} more and your patterns appear.</p><div className="mt-3 h-2 rounded-full bg-secondary" role="progressbar" aria-label="Sessions towards patterns" aria-valuemin={0} aria-valuemax={5} aria-valuenow={d.session_count}><div className="h-full rounded-full bg-primary" style={{width:`${d.session_count/5*100}%`}}/></div></Card>}
+  <Heatmap d={d}/>
+  <Evidence title="Focus and meetings · hours per day">{!known&&<Empty>Calendar {cal.isLoading?'loading…':'unavailable'} · focus still shown.</Empty>}<Chart><BarChart data={daily} margin={{left:0,right:0}}><CartesianGrid stroke="var(--color-subtle)" vertical={false}/><XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={35}/><YAxis width={28} tick={axis}/><Tooltip contentStyle={tip}/><Legend wrapperStyle={{fontSize:12}}/><Bar dataKey="focus" name="Focus" fill="var(--color-chart-1)"/><Bar dataKey="meetings" name="Meetings" fill="var(--color-chart-3)"/></BarChart></Chart></Evidence>
+  <Evidence title="Focus · hours per week"><Chart><BarChart data={d.by_week.map(x=>({label:dateLabel(x.week),hours:x.minutes/60}))}><XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={35}/><YAxis width={28} tick={axis}/><Tooltip contentStyle={tip}/><Bar dataKey="hours" name="Focus hours" fill="var(--color-chart-1)"/></BarChart></Chart></Evidence>
+  <Evidence title="Last week"><p className="mb-3 text-xs text-muted-foreground">{dateLabel(d.last_week.start)}–{dateLabel(d.last_week.end)} · completed week</p><WeeklyReviewContent d={d} load={lastLoad} calendarKnown={known}/></Evidence>
+  <Evidence title="Planned vs actual">{d.completion.rate===null?<Empty/>:<><p className="mb-3">You finish <strong className="text-accent-text">{Math.round(d.completion.rate)}%</strong> of planned time.</p><div className="grid grid-cols-2 gap-3">{d.completion_buckets.map(x=><div key={x.bucket} className="border-l-2 border-primary pl-3"><p className="text-xl font-semibold tabular">{Math.round(x.rate)}%</p><p className="text-xs text-muted-foreground">{x.bucket} min · {x.count} sessions</p></div>)}</div><p className="mt-3 text-sm">{[...d.completion_buckets].sort((a,b)=>b.rate-a.rate)[0]?.bucket}-min sessions finish best.</p></>}</Evidence>
+  <Evidence title="Energy before and after focus">{!d.focus_energy.count?<Empty>Log energy before and after the same session to compare.</Empty>:<><div className="mb-3 grid grid-cols-3 gap-2 text-center">{[['Before',d.focus_energy.before],['After',d.focus_energy.after],['Change',signed(d.focus_energy.change??0) ]].map(([label,value])=><div key={label}><p className="text-xl font-semibold tabular">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>)}</div><Chart><BarChart data={d.energy_change_by_hour.map(x=>({...x,label:hourLabel(x.hour)}))}><XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={30}/><YAxis tick={axis} width={28}/><ReferenceLine y={0} stroke="var(--color-border)"/><Tooltip contentStyle={tip}/><Bar dataKey="change" name="Energy change" fill="var(--color-chart-1)"/></BarChart></Chart><EnergyNote rows={d.energy_change_by_hour}/></>}</Evidence>
+  <Evidence title="Energy across the day">{!d.energy_by_hour.length?<Empty/>:<Chart><LineChart data={d.energy_by_hour.map(x=>({...x,label:hourLabel(x.hour)}))}><XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={30}/><YAxis domain={[1,5]} ticks={[1,3,5]} width={24} tick={axis}/><Tooltip contentStyle={tip}/><Line dataKey="avg" name="Energy" stroke="var(--color-chart-2)" strokeWidth={2}/></LineChart></Chart>}</Evidence>
+  <Evidence title="Meeting load · last 12 weeks">{known?<><Chart><BarChart data={weeks.map(w=>({label:dateLabel(w.week),load:w.load}))}><XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={30}/><YAxis width={35} tick={axis} unit="%"/><Tooltip contentStyle={tip}/><Bar dataKey="load" name="Work hours %" fill="var(--color-chart-3)"/></BarChart></Chart><p className="text-xs text-muted-foreground">Monday–Friday, within your work hours · selected period.</p>{highMeetingLoad(weeks)&&<p className="mt-3 text-sm text-gold-text">Meetings took over 60% of work hours three weeks running. A little breathing room may help.</p>}</>:<Empty>Connect your calendar to see meeting load.</Empty>}</Evidence>
+  <Evidence title="Primed vs not primed"><PrimedCard p={d.primed}/></Evidence>
+  <Evidence title="Did you get what you wanted?"><Outcomes o={d.intent_outcomes}/></Evidence>
+  <Evidence title="Interruptions by hour">{!d.interruptions.length?<Empty>None logged.</Empty>:<Chart><BarChart data={d.interruptions_by_hour.map(x=>({...x,label:hourLabel(x.hour)}))}><XAxis dataKey="label" tick={axis} interval={5}/><YAxis width={24} tick={axis} allowDecimals={false}/><Tooltip contentStyle={tip}/><Legend wrapperStyle={{fontSize:12}}/><Bar dataKey="self" name="Self" stackId="a" fill="var(--color-chart-1)"/><Bar dataKey="external" name="External" stackId="a" fill="var(--color-chart-3)"/><Bar dataKey="unknown" name="Not specified" stackId="a" fill="var(--color-chart-2)"/></BarChart></Chart>}</Evidence>
+  <Evidence title="Interruptions">{!d.interruptions.length?<Empty>None logged.</Empty>:['self','external','unknown'].map(src=>{const rows=d.interruptions.filter(x=>x.source===src).sort((a,b)=>b.count-a.count);return rows.length?<div key={src} className="mb-3"><h3 className="mb-2 text-sm text-muted-foreground">{src==='self'?'Self':src==='external'?'External':'Not specified'}</h3>{rows.map((x,i)=><p key={i} className="flex justify-between gap-3 text-sm"><span>{x.label??REASON[x.reason]??x.reason}</span><strong>{x.count}</strong></p>)}</div>:null;})}</Evidence>
+  </>}
+ </div>;
 }
-
-function Empty() {
-  return <p className="text-sm text-muted-foreground">Nothing here yet.</p>;
-}
-
-function MeetingsVsFocus({ byDay }: { byDay: { day: string; minutes: number }[] }) {
-  const { data: settings } = useSettings();
-  const fetchEvents = useServerFn(getCalendarEvents);
-  const q = useQuery({
-    queryKey: ["gcal-week"],
-    enabled: !!settings,
-    queryFn: async () => {
-      const end = startOfLocalDay(new Date());
-      end.setDate(end.getDate() + 1);
-      const start = new Date(end);
-      start.setDate(start.getDate() - 7);
-      const res = await fetchEvents({ data: { timeMin: start.toISOString(), timeMax: end.toISOString() } });
-      const events = res.events as unknown as CalEvent[];
-      return Array.from({ length: 7 }, (_, i) => {
-        const day = new Date(start);
-        day.setDate(day.getDate() + i);
-        const key = localDateKey(day);
-        const mm = meetingMinutes(events.map((e) => ({ ...e, source: "google" as const })), atLocal(day, settings!.work_start), atLocal(day, settings!.work_end));
-        return {
-          label: day.toLocaleDateString("en-GB", { weekday: "short" }),
-          meetings: Math.round((mm / 60) * 10) / 10,
-          focus: Math.round(((byDay.find((b) => b.day === key)?.minutes ?? 0) / 60) * 10) / 10,
-        };
-      });
-    },
-  });
-  return (
-    <Card>
-      <h2 className="mb-3 font-semibold">Meetings vs focus (hours, last 7 days)</h2>
-      {q.isLoading ? <div role="status" aria-busy="true" className="h-44 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
-        : q.isError ? <p className="text-sm text-muted-foreground">Calendar unavailable right now.</p> : (
-        <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={q.data ?? []}>
-            <XAxis dataKey="label" tick={axis} />
-            <YAxis tick={axis} width={28} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
-            <Bar dataKey="meetings" name="Meetings" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="focus" name="Focus" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Card>
-  );
-}
+function Findings({d,period}:{d:Summary;period:Period}){const f=d.findings;return <section aria-label="Your findings" className="divide-y divide-subtle">{[f.best?`Your best focus is ${hourLabel(f.best.hour)}–${hourLabel(f.best.hour+1)} · energy after ${f.best.avg_energy}`:'Best focus hours · not enough data yet.',f.primed?`Primed meetings leave you ${signed(f.primed.difference)} energy`:'Primed vs not · not enough data yet.',f.interruption?`${f.interruption.label??REASON[f.interruption.reason]??f.interruption.reason} interrupted you ${f.interruption.count} times ${periodLabel(period)} · ${f.interruption.self} self`:'Top interruption · not enough data yet.'].map((text,i)=><p key={i} className="py-3 text-base font-medium leading-relaxed">{text}</p>)}</section>;}
+function Heatmap({d}:{d:Summary}){const max=Math.max(1,...d.by_hour.map(x=>x.minutes));return <Evidence title="Your focus hours"><div className="grid grid-cols-4 gap-2">{Array.from({length:24},(_,hour)=>{const row=d.by_hour.find(x=>x.hour===hour),intensity=row?row.minutes/max:0;return <div key={hour} className={cn('relative flex h-20 flex-col items-center justify-center overflow-hidden rounded-lg border border-subtle',d.findings.best?.hour===hour&&'outline-2 outline-gold-text')} aria-label={`${hourLabel(hour)}, ${row?.minutes??0} minutes, energy ${row?.avg_energy??'not rated'}`}><div aria-hidden className="absolute inset-0 bg-primary" style={{opacity:intensity*.2}}/><div aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-primary" style={{opacity:row?.minutes?Math.max(.25,intensity):0}}/><span className="relative text-sm font-semibold tabular">{hourLabel(hour)}</span><span className="relative text-lg tabular">{row?.avg_energy??'–'}</span></div>;})}</div><div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Shade · focus minutes</span><span className="h-2 w-4 bg-primary/20"/><span className="h-2 w-4 bg-primary/60"/><span className="h-2 w-4 bg-primary"/><span>Number · energy after</span><span className="text-gold-text">Gold outline · best hour</span></div></Evidence>;}
+function PrimedCard({p}:{p:Summary['primed']}){if(!p.primed_n&&!p.unprimed_n)return <Empty>No after-meeting ratings yet.</Empty>;return <><div className="grid grid-cols-2 gap-3 text-center"><div><p className="text-2xl font-semibold text-gold-text tabular">{p.primed_avg??'–'}</p><p className="text-xs">Primed ({p.primed_n})</p></div><div><p className="text-2xl font-semibold tabular">{p.unprimed_avg??'–'}</p><p className="text-xs">Not primed ({p.unprimed_n})</p></div></div>{(p.primed_n<3||p.unprimed_n<3)&&<p className="mt-3 text-sm text-muted-foreground">Too few to compare yet ({p.primed_n} primed, {p.unprimed_n} not).</p>}</>;}
+function Outcomes({o}:{o:Summary['intent_outcomes']}){const n=o.yes+o.partly+o.no;return n?<><p className="mb-3 text-xs text-muted-foreground">Primed meetings with an intention · {n} responses</p><div className="grid grid-cols-3 gap-2 text-center">{(['yes','partly','no'] as const).map(k=><div key={k}><p className="text-xl font-semibold tabular">{Math.round(o[k]/n*100)}%</p><p className="text-xs capitalize">{k}</p></div>)}</div></>:<Empty>No intention outcomes logged yet.</Empty>;}
+function EnergyNote({rows}:{rows:Summary['energy_change_by_hour']}){const morning=rows.filter(x=>x.hour<12&&x.count>=3),late=rows.filter(x=>x.hour>=16&&x.count>=3);return morning.some(x=>x.change>0)&&late.some(x=>x.change<0)?<p className="text-sm text-muted-foreground">Focus charges you in the morning, drains you after 4pm.</p>:null;}

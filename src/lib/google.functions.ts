@@ -66,13 +66,16 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
     const ids = settings?.calendar_ids?.length ? settings.calendar_ids : ["primary"];
     const out: LiveEvent[] = [];
     for (const calId of ids.slice(0, 10)) {
+      let pageToken: string | undefined;
+      do {
       const qs = new URLSearchParams({
         timeMin: data.timeMin,
         timeMax: data.timeMax,
         singleEvents: "true",
         orderBy: "startTime",
         maxResults: "250",
-        fields: "items(id,summary,start,end,status,transparency)",
+        fields: "nextPageToken,items(id,summary,start,end,status,transparency)",
+        ...(pageToken ? { pageToken } : {}),
       });
       const res = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${qs}`,
@@ -82,6 +85,7 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
       if (res.status === 404) continue;
       if (!res.ok) throw new Error("Google Calendar request failed");
       const body = (await res.json()) as {
+        nextPageToken?: string;
         items?: {
           id: string;
           summary?: string;
@@ -91,18 +95,20 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
           end: { dateTime?: string; date?: string };
         }[];
       };
+      pageToken = body.nextPageToken;
       for (const it of body.items ?? []) {
         if (it.status === "cancelled" || it.transparency === "transparent") continue;
         const allDay = !it.start.dateTime;
         out.push({
           id: `${calId}:${it.id}`,
           title: it.summary ?? "Busy",
-          start: allDay ? new Date(it.start.date + "T00:00:00").toISOString() : new Date(it.start.dateTime!).toISOString(),
-          end: allDay ? new Date(it.end.date + "T00:00:00").toISOString() : new Date(it.end.dateTime!).toISOString(),
+          start: allDay ? new Date(it.start.date + "T00:00:00").toISOString() : new Date(it.start.dateTime ?? "").toISOString(),
+          end: allDay ? new Date(it.end.date + "T00:00:00").toISOString() : new Date(it.end.dateTime ?? "").toISOString(),
           allDay,
           calendarId: calId,
         });
       }
+      } while (pageToken);
     }
     out.sort((a, b) => a.start.localeCompare(b.start));
     return { status: "connected", events: out };

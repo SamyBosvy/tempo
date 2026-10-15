@@ -27,6 +27,7 @@ import {
 import { enqueue } from "@/lib/offline-queue";
 import { useNow } from "@/lib/use-now";
 import { useFocusState } from "@/lib/focus-timer";
+import { MondayReview } from "@/components/tempo/WeeklyReview";
 import { Card, EnergyPicker } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { DayRibbonLive } from "@/components/tempo/DayRibbon";
@@ -210,6 +211,7 @@ function Today() {
       )}
       {offline && <p className="text-sm text-muted-foreground">Offline · showing the last loaded day.</p>}
 
+      {isToday && day.getDay() === 1 && <MondayReview />}
       {isToday && !morning && <MorningCheck dayKey={dayKey} />}
 
       {isToday && <PrimeCards due={primeDue} leadMin={settings.prime_lead_min} now={now} />}
