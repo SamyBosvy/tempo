@@ -208,7 +208,7 @@ function PrimeInner({ settings }: { settings: Settings }) {
       <div role="timer" aria-live="polite" className="font-display text-6xl font-semibold tabular">{countdown}</div>
       <div className="grid w-full max-w-72 gap-2">
         <Button size="lg" onClick={begin}>Start now</Button>
-        <Button variant="ghost" onClick={cancelStart}>Cancel</Button>
+        <Button variant="outline" onClick={cancelStart}>Cancel</Button>
       </div>
     </div>
   );
