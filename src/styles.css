@@ -188,7 +188,6 @@
   bottom: var(--dialog-bottom);
   width: auto;
   height: fit-content;
-  max-width: 32rem;
   max-height: min(90dvh, calc(100dvh - var(--dialog-top) - var(--dialog-bottom)));
   margin: auto;
   transform: none;

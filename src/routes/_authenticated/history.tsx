@@ -7,7 +7,7 @@ import { fmtTime, localDateKey, startOfLocalDay } from "@/lib/timeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, EnergyPicker, PageTitle, ScreenSkeleton } from "@/components/tempo/bits";
 
 export const Route = createFileRoute("/_authenticated/history")({
@@ -204,8 +204,10 @@ function EditDialog({ entry, onClose, onDelete, table }: { entry: Entry; onClose
             <EnergyPicker label="Energy" value={ea} onChange={setEa} />
           </>
         )}
-        <Button size="lg" disabled={busy} onClick={save}>Save</Button>
-        <Button variant="ghost" className="text-destructive" onClick={onDelete}>Delete</Button>
+        <DialogFooter>
+          <Button variant="ghost" className="h-12 text-destructive" onClick={onDelete}>Delete</Button>
+          <Button size="lg" disabled={busy} onClick={save}>Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

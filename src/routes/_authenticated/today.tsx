@@ -170,9 +170,10 @@ function Glance({ label, value }: { label: string; value: string }) {
 
 function MorningCheck({ dayKey }: { dayKey: string }) {
   const qc = useQueryClient();
+  const now = useNow(60_000);
   return (
     <Card className="space-y-3">
-      <p className="font-semibold">Energy this morning?</p>
+      <p className="font-semibold">{morningEnergyTitle(new Date(now))}</p>
       <EnergyPicker
         label="Morning energy"
         value={null}
@@ -406,7 +407,9 @@ function AddBlock({ day }: { day: Date }) {
               <Input id="be" type="time" className="h-12" value={end} onChange={(e) => setEnd(e.target.value)} />
             </div>
           </div>
-          <Button size="lg" disabled={add.isPending} onClick={() => add.mutate()}>Add</Button>
+          <DialogFooter>
+            <Button size="lg" className="w-full" disabled={add.isPending} onClick={() => add.mutate()}>Add</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
