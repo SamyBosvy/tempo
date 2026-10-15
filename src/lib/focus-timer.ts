@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 
 export type InterruptReason = "meeting" | "message" | "distracted" | "other" | "custom";
-export type Interruption = { reason: InterruptReason; source?: "self" | "external"; customLabel?: string | null; at: string };
+export type Interruption = { reason: InterruptReason; source?: "self" | "external" | undefined; customLabel?: string | null; at: string };
 export const MAX_PARKED = 10;
 export const PARKED_MAX_LEN = 140;
 export type FocusState = {
