@@ -8,8 +8,8 @@ import type { Settings } from "@/lib/settings";
 
 export function FocusEndSignal({ settings }: { settings: Settings }) {
   const s = useFocusState();
-  const visible = typeof document === "undefined" || document.visibilityState === "visible";
-  useWakeLock(wakeLockWanted(settings.wake_lock, !!s, !!s?.paused, visible) || (settings.wake_lock && !!s && !s.paused));
+  // The hook re-acquires on visibilitychange, so visibility is handled there.
+  useWakeLock(wakeLockWanted(settings.wake_lock, !!s, !!s?.paused, true));
 
   useEffect(() => {
     if (!s || s.paused || s.signalled || s.overtime) return;

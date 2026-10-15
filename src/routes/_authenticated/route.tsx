@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SAFETY_TEXT } from "@/components/tempo/bits";
 import { PrimeNotifier } from "@/components/tempo/PrimeNotifier";
+import { FocusEndSignal } from "@/components/tempo/FocusEndSignal";
+import { useImmersive } from "@/lib/immersive";
 import { GoogleConnectResult } from "@/components/tempo/GoogleConnectResult";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,7 @@ function AppShell() {
   const focus = useFocusState();
   const queued = useQueueSize();
   const now = useNow(1000);
+  const immersive = useImmersive();
 
   useEffect(() => {
     const light = settings?.theme === "light";
@@ -56,7 +59,7 @@ function AppShell() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col">
       <GoogleConnectResult />
-      {(focus && pathname !== "/focus") || queued > 0 ? (
+      {!immersive && ((focus && pathname !== "/focus") || queued > 0) ? (
         <div className="sticky top-0 z-30 flex items-center justify-center gap-2 px-4 pt-[max(env(safe-area-inset-top),0.5rem)] pb-2">
           {focus && pathname !== "/focus" && (
             <Link
@@ -75,10 +78,10 @@ function AppShell() {
           )}
         </div>
       ) : null}
-      <main className="flex-1 px-4 pb-28 pt-4">
+      <main className={cn("flex-1 px-4 pt-4", immersive ? "pb-[max(env(safe-area-inset-bottom),1rem)]" : "pb-28")}>
         <Outlet />
       </main>
-      <nav
+      {!immersive && <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-subtle bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
       >
@@ -102,7 +105,8 @@ function AppShell() {
             );
           })}
         </ul>
-      </nav>
+      </nav>}
+      {settings && <FocusEndSignal settings={settings} />}
       {settings && <SafetyModal key={settings.user_id} settings={settings} />}
       {settings && <PrimeNotifier settings={settings} />}
     </div>
