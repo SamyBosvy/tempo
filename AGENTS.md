@@ -33,3 +33,5 @@
 
 - Insights period summaries and completed-week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, so calendar details are never persisted.
 - Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once, so percentages represent occupied working time.
+
+- History uses security-invoker week search (500-entry continuation within the same week) and per-month day aggregates; add-session logs use the queue, edits preserve ids, and all date validation compares local input against UTC timestamps.
