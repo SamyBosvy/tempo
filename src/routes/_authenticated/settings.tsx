@@ -20,6 +20,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, ScreenSkeleton, SAFETY_TEXT } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { cn } from "@/lib/utils";
+import { validWorkHours } from "@/lib/fix-rules";
+import { discardAttention, retryAttention, useAttentionRows } from "@/lib/offline-queue";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: z.object({ google: z.string().optional() }),
@@ -53,6 +55,7 @@ function SettingsPage() {
         <Button asChild variant="ghost" size="icon" aria-label="Back to Today"><Link to="/today"><ChevronLeft /></Link></Button>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
+      <AttentionSection />
       <AccountSection />
       <DaySection s={s} />
       <BreathSection s={s} />
@@ -70,6 +73,32 @@ function SettingsPage() {
       </Section>
       <Button variant="outline" className="w-full" onClick={signOut}>Sign out</Button>
     </div>
+  );
+}
+
+const TABLE_LABEL: Record<string, string> = { focus_sessions: "Focus session", interruptions: "Interruption", energy_ratings: "Energy rating", prime_sessions: "Prime" };
+
+function AttentionSection() {
+  const rows = useAttentionRows();
+  if (!rows.length) return null;
+  return (
+    <Section title="Needs attention">
+      <p className="text-sm text-muted-foreground">These entries couldn't be saved after 3 tries. Everything else is still syncing.</p>
+      <ul className="space-y-2">
+        {rows.map((o) => {
+          const at = (o.row.started_at ?? o.row.at) as string | undefined;
+          return (
+            <li key={o.qid} className="space-y-2 rounded-xl border border-subtle p-3">
+              <div className="font-semibold">{TABLE_LABEL[o.table] ?? o.table}{at ? ` · ${new Date(at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="secondary" onClick={() => void retryAttention(o.qid)}>Retry</Button>
+                <Button variant="ghost" className="text-destructive" onClick={() => discardAttention(o.qid)}>Discard</Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
   );
 }
 
@@ -140,18 +169,27 @@ function AccountSection() {
 function DaySection({ s }: { s: Settings }) {
   const save = useSaveSettings();
   const [kw, setKw] = useState(s.keywords.join(", "));
+  const [ws, setWs] = useState(s.work_start.slice(0, 5));
+  const [we, setWe] = useState(s.work_end.slice(0, 5));
+  const hoursOk = validWorkHours(ws, we);
+  const saveHours = () => {
+    if (!ws || !we || !hoursOk) return;
+    if (ws === s.work_start.slice(0, 5) && we === s.work_end.slice(0, 5)) return;
+    save.mutate({ work_start: ws, work_end: we });
+  };
   return (
     <Section title="Your day">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="ws">Work starts</Label>
-          <Input id="ws" type="time" className="h-12" defaultValue={s.work_start.slice(0, 5)} onBlur={(e) => e.target.value && save.mutate({ work_start: e.target.value })} />
+          <Input id="ws" type="time" className="h-12" value={ws} aria-invalid={!hoursOk} aria-describedby={!hoursOk ? "hours-err" : undefined} onChange={(e) => setWs(e.target.value)} onBlur={saveHours} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="we">Work ends</Label>
-          <Input id="we" type="time" className="h-12" defaultValue={s.work_end.slice(0, 5)} onBlur={(e) => e.target.value && save.mutate({ work_end: e.target.value })} />
+          <Input id="we" type="time" className="h-12" value={we} aria-invalid={!hoursOk} aria-describedby={!hoursOk ? "hours-err" : undefined} onChange={(e) => setWe(e.target.value)} onBlur={saveHours} />
         </div>
       </div>
+      {!hoursOk && <p id="hours-err" role="alert" className="text-sm text-destructive">Work end must be after work start. Not saved.</p>}
       <Stepper label="Minimum focus length" value={s.min_focus_min} unit="min" min={10} max={120} step={5} onChange={(v) => save.mutate({ min_focus_min: v })} />
       <Stepper label="Prime lead time" value={s.prime_lead_min} unit="min" min={5} max={30} step={5} onChange={(v) => save.mutate({ prime_lead_min: v })} />
       <div className="space-y-1.5">

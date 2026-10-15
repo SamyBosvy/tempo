@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { deleteWithUndo, restoreDeleted } from "@/lib/history-delete";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtTime, localDateKey, startOfLocalDay } from "@/lib/timeline";
@@ -34,15 +35,14 @@ function History() {
   const qc = useQueryClient();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<Entry | null>(null);
-  const timers = useRef<Record<string, number>>({});
 
-  // Past dates only, one week per page.
+  // Today and past dates, one week per page (page 0 ends at tomorrow 00:00).
   const q = useInfiniteQuery({
     queryKey: ["history"],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const to = startOfLocalDay(new Date());
-      to.setDate(to.getDate() - pageParam * WEEK);
+      to.setDate(to.getDate() + 1 - pageParam * WEEK);
       const from = new Date(to);
       from.setDate(from.getDate() - WEEK);
       const [s, p, r] = await Promise.all([
@@ -65,25 +65,32 @@ function History() {
 
   const table = (e: Entry) => (e.type === "session" ? "focus_sessions" : e.type === "prime" ? "prime_sessions" : "energy_ratings");
 
-  function remove(e: Entry) {
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["history"] });
+    qc.invalidateQueries({ queryKey: ["insights"] });
+    qc.invalidateQueries({ queryKey: ["daylogs"] });
+  };
+  const unhide = (id: string) => setHidden((h) => { const n = new Set(h); n.delete(id); return n; });
+
+  // Deletes in the database straight away; Undo re-inserts the saved row.
+  async function remove(e: Entry) {
     setHidden((h) => new Set(h).add(e.id));
-    timers.current[e.id] = window.setTimeout(async () => {
-      const { error } = await supabase.from(table(e)).delete().eq("id", e.id);
-      if (error) {
-        toast.error("Couldn't delete that. Try again.");
-        setHidden((h) => { const n = new Set(h); n.delete(e.id); return n; });
-      } else {
-        qc.invalidateQueries({ queryKey: ["history"] });
-        qc.invalidateQueries({ queryKey: ["insights"] });
-      }
-    }, 8000);
+    const res = await deleteWithUndo(supabase, table(e), e.id);
+    if (!res.ok) {
+      toast.error("Couldn't delete that. Try again.");
+      unhide(e.id);
+      return;
+    }
+    refresh();
     toast("Deleted.", {
       duration: 8000,
       action: {
         label: "Undo",
-        onClick: () => {
-          window.clearTimeout(timers.current[e.id]);
-          setHidden((h) => { const n = new Set(h); n.delete(e.id); return n; });
+        onClick: async () => {
+          const ok = await restoreDeleted(supabase, res.saved);
+          if (!ok) { toast.error("Couldn't restore that entry."); return; }
+          unhide(e.id);
+          refresh();
         },
       },
     });
@@ -102,7 +109,7 @@ function History() {
   return (
     <div className="space-y-4">
       <PageTitle>History</PageTitle>
-      {byDay.size === 0 && <Card><p className="text-muted-foreground">Nothing logged before today yet.</p></Card>}
+      {byDay.size === 0 && <Card><p className="text-muted-foreground">Nothing logged yet.</p></Card>}
       {[...byDay.entries()].map(([k, list]) => (
         <section key={k} aria-labelledby={`d-${k}`}>
           <h2 id={`d-${k}`} className="mb-2 text-sm font-semibold text-muted-foreground">
