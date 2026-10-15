@@ -137,7 +137,7 @@ export function retryAttention(qid: string) {
   const op = readAttention().find((o) => o.qid === qid);
   if (!op) return;
   writeAttention(readAttention().filter((o) => o.qid !== qid));
-  write([...read(), { ...op, attempts: 0, lastError: undefined }]);
+  write([...read(), { qid: op.qid, table: op.table, row: op.row, attempts: 0 }]);
   return flush();
 }
 

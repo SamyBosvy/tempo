@@ -86,7 +86,7 @@ function AttentionSection() {
       <p className="text-sm text-muted-foreground">These entries couldn't be saved after 3 tries. Everything else is still syncing.</p>
       <ul className="space-y-2">
         {rows.map((o) => {
-          const at = (o.row.started_at ?? o.row.at) as string | undefined;
+          const at = (o.row["started_at"] ?? o.row["at"]) as string | undefined;
           return (
             <li key={o.qid} className="space-y-2 rounded-xl border border-subtle p-3">
               <div className="font-semibold">{TABLE_LABEL[o.table] ?? o.table}{at ? ` · ${new Date(at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</div>
