@@ -25,6 +25,7 @@ export default defineConfig({
         workbox: {
           globPatterns: ["**/*.{js,css,png,svg,woff2}"],
           navigateFallback: null,
+          importScripts: ["/sw-notify.js"],
           runtimeCaching: [
             {
               urlPattern: ({ request, url }) =>
