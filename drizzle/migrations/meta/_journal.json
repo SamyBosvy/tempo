@@ -36,6 +36,13 @@
       "when": 1792035631197,
       "tag": "0004_prime_loop_patterns",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792036810360,
+      "tag": "0005_insights_period_review",
+      "breakpoints": true
     }
   ]
 }
