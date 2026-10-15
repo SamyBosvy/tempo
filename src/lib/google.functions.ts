@@ -2,12 +2,21 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { GOOGLE_SCOPES, ReconnectRequired, getAccessToken, newNonce, revokeAndDelete, signState } from "./google.server";
+import {
+  GOOGLE_SCOPES,
+  ReconnectRequired,
+  getAccessToken,
+  newNonce,
+  revokeAndDelete,
+  signState,
+} from "./google.server";
 import { googleCallbackUri, googleReturnPath } from "./google-connect";
 
 export const startGoogleConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ origin: z.string().url(), returnPath: z.string().max(2048) }).parse(input))
+  .inputValidator((input) =>
+    z.object({ origin: z.string().url(), returnPath: z.string().max(2048) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const request = getRequest();
     // The browser Origin header is authoritative, including preview proxy hosts.
@@ -16,7 +25,13 @@ export const startGoogleConnect = createServerFn({ method: "POST" })
     const clientId = process.env["GOOGLE_CLIENT_ID"];
     if (!clientId) throw new Error("Google isn't configured yet.");
     const redirectUri = googleCallbackUri(origin);
-    const state = signState({ u: context.userId, r: redirectUri, p: googleReturnPath(data.returnPath), exp: Date.now() + 10 * 60_000, n: newNonce() });
+    const state = signState({
+      u: context.userId,
+      r: redirectUri,
+      p: googleReturnPath(data.returnPath),
+      exp: Date.now() + 10 * 60_000,
+      n: newNonce(),
+    });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -66,43 +81,53 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
     const ids = settings?.calendar_ids?.length ? settings.calendar_ids : ["primary"];
     const out: LiveEvent[] = [];
     for (const calId of ids.slice(0, 10)) {
-      const qs = new URLSearchParams({
-        timeMin: data.timeMin,
-        timeMax: data.timeMax,
-        singleEvents: "true",
-        orderBy: "startTime",
-        maxResults: "250",
-        fields: "items(id,summary,start,end,status,transparency)",
-      });
-      const res = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${qs}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (res.status === 401) return { status: "reconnect", events: [] };
-      if (res.status === 404) continue;
-      if (!res.ok) throw new Error("Google Calendar request failed");
-      const body = (await res.json()) as {
-        items?: {
-          id: string;
-          summary?: string;
-          status?: string;
-          transparency?: string;
-          start: { dateTime?: string; date?: string };
-          end: { dateTime?: string; date?: string };
-        }[];
-      };
-      for (const it of body.items ?? []) {
-        if (it.status === "cancelled" || it.transparency === "transparent") continue;
-        const allDay = !it.start.dateTime;
-        out.push({
-          id: `${calId}:${it.id}`,
-          title: it.summary ?? "Busy",
-          start: allDay ? new Date(it.start.date + "T00:00:00").toISOString() : new Date(it.start.dateTime!).toISOString(),
-          end: allDay ? new Date(it.end.date + "T00:00:00").toISOString() : new Date(it.end.dateTime!).toISOString(),
-          allDay,
-          calendarId: calId,
+      let pageToken: string | undefined;
+      do {
+        const qs = new URLSearchParams({
+          timeMin: data.timeMin,
+          timeMax: data.timeMax,
+          singleEvents: "true",
+          orderBy: "startTime",
+          maxResults: "250",
+          fields: "nextPageToken,items(id,summary,start,end,status,transparency)",
+          ...(pageToken ? { pageToken } : {}),
         });
-      }
+        const res = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${qs}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (res.status === 401) return { status: "reconnect", events: [] };
+        if (res.status === 404) break;
+        if (!res.ok) throw new Error("Google Calendar request failed");
+        const body = (await res.json()) as {
+          nextPageToken?: string;
+          items?: {
+            id: string;
+            summary?: string;
+            status?: string;
+            transparency?: string;
+            start: { dateTime?: string; date?: string };
+            end: { dateTime?: string; date?: string };
+          }[];
+        };
+        pageToken = body.nextPageToken;
+        for (const it of body.items ?? []) {
+          if (it.status === "cancelled" || it.transparency === "transparent") continue;
+          const allDay = !it.start.dateTime;
+          out.push({
+            id: `${calId}:${it.id}`,
+            title: it.summary ?? "Busy",
+            start: allDay
+              ? new Date(it.start.date + "T00:00:00").toISOString()
+              : new Date(it.start.dateTime ?? "").toISOString(),
+            end: allDay
+              ? new Date(it.end.date + "T00:00:00").toISOString()
+              : new Date(it.end.dateTime ?? "").toISOString(),
+            allDay,
+            calendarId: calId,
+          });
+        }
+      } while (pageToken);
     }
     out.sort((a, b) => a.start.localeCompare(b.start));
     return { status: "connected", events: out };
@@ -125,10 +150,16 @@ export const getCalendarList = createServerFn({ method: "POST" })
     );
     if (res.status === 401) return { status: "reconnect" as const, calendars: [] };
     if (!res.ok) throw new Error("Could not load calendars");
-    const body = (await res.json()) as { items?: { id: string; summary: string; primary?: boolean }[] };
+    const body = (await res.json()) as {
+      items?: { id: string; summary: string; primary?: boolean }[];
+    };
     return {
       status: "connected" as const,
-      calendars: (body.items ?? []).map((c) => ({ id: c.primary ? "primary" : c.id, name: c.summary, primary: !!c.primary })),
+      calendars: (body.items ?? []).map((c) => ({
+        id: c.primary ? "primary" : c.id,
+        name: c.summary,
+        primary: !!c.primary,
+      })),
     };
   });
 

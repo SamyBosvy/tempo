@@ -27,6 +27,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: z.object({ google: z.string().optional() }),
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Settings · Tempo" },
       { name: "description", content: "Working hours, breathing, calendar and account." },
       { property: "og:title", content: "Settings · Tempo" },

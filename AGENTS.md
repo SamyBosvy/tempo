@@ -30,3 +30,6 @@
 - Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
 - Prime derives phase transitions from elapsed timestamps; phase audio is created by Begin and disposed on finish, route exit or tab hiding, so background tabs never keep playing cues.
 - Running prime state lives in localStorage (src/lib/prime-session.ts) and is computed from startedAt, so locks and reloads resume at the right phase.
+
+- Insights period summaries and completed-week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, so calendar details are never persisted.
+- Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once, so percentages represent occupied working time.

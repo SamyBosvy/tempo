@@ -34,3 +34,9 @@
 - [x] P8 60-second reset (Today, back-to-back, app shortcut)
 - [x] P9 intention outcome on check-ins, History, export, Insights
 - [x] P10 coherent + extended exhale patterns
+
+# Insights upgrade (I1–I12)
+- [x] Period-aware, gap-filled private aggregates and server-side findings.
+- [x] Insights charts, comparison cards, and Monday weekly review.
+- [x] Rule tests (92 passed), temporary-data phone checks in both themes, cleanup and full suite; Monday dismissal and remembered period verified.
+- [ ] Verify live calendar-derived meeting bars and 12-week load — account has no connected calendar; zero/unavailable states and calculation rules verified.

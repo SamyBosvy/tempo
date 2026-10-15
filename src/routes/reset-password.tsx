@@ -9,6 +9,9 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Reset password · Tempo" },
       { name: "description", content: "Choose a new Tempo password." },
       { property: "og:title", content: "Reset password · Tempo" },

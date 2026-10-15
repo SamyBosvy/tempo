@@ -27,6 +27,7 @@ import {
 import { enqueue } from "@/lib/offline-queue";
 import { useNow } from "@/lib/use-now";
 import { useFocusState } from "@/lib/focus-timer";
+import { MondayReview } from "@/components/tempo/WeeklyReview";
 import { Card, EnergyPicker } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { DayRibbonLive } from "@/components/tempo/DayRibbon";
@@ -41,6 +42,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Today · Tempo" },
       { name: "description", content: "Your day, focus windows and meetings." },
       { property: "og:title", content: "Today · Tempo" },
@@ -210,6 +214,7 @@ function Today() {
       )}
       {offline && <p className="text-sm text-muted-foreground">Offline · showing the last loaded day.</p>}
 
+      {isToday && day.getDay() === 1 && <MondayReview />}
       {isToday && !morning && <MorningCheck dayKey={dayKey} />}
 
       {isToday && <PrimeCards due={primeDue} leadMin={settings.prime_lead_min} now={now} />}

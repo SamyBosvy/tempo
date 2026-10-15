@@ -449,7 +449,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_insights: { Args: { _tz: string }; Returns: Json }
+      get_insights:
+        | { Args: { _tz: string }; Returns: Json }
+        | { Args: { _period: string; _tz: string }; Returns: Json }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
       has_role: {
         Args: {
@@ -457,6 +459,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      insight_summary: {
+        Args: { _end: string; _start: string; _tz: string }
+        Returns: Json
       }
       list_members: {
         Args: { _limit: number; _offset: number }
