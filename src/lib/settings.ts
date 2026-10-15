@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   meeting_buffer_min: 5,
   breath_pattern: "sigh",
   breath_minutes: 2,
+  eyes_closed: false,
   keywords: ["review", "interview", "1:1", "performance"],
   calendar_ids: ["primary"],
   notifications: false,

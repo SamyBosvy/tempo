@@ -28,3 +28,4 @@
 - Recurring manual blocks live in recurring_blocks and are expanded per day client-side (timeline.expandRecurring); one-day edits add a recurring_skips row plus a one-off manual block, so the series stays intact.
 - Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, and fire once per target via a `signalled` flag — so reloads or tab switches never double-chime.
 - Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
+- Prime derives phase transitions from elapsed timestamps; phase audio is created by Begin and disposed on finish, route exit or tab hiding, so background tabs never keep playing cues.

@@ -372,6 +372,7 @@ export type Database = {
           daily_focus_target_min: number
           end_notify: boolean
           end_sound: boolean
+          eyes_closed: boolean
           google_connected_at: string | null
           google_email: string | null
           keywords: string[]
@@ -396,6 +397,7 @@ export type Database = {
           daily_focus_target_min?: number
           end_notify?: boolean
           end_sound?: boolean
+          eyes_closed?: boolean
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
@@ -420,6 +422,7 @@ export type Database = {
           daily_focus_target_min?: number
           end_notify?: boolean
           end_sound?: boolean
+          eyes_closed?: boolean
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
