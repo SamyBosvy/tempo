@@ -42,6 +42,6 @@
 - [ ] Verify live calendar-derived meeting bars and 12-week load — account has no connected calendar; zero/unavailable states and calculation rules verified.
 
 # History upgrade (H1–H7)
-- [ ] Private week search and month-total RPCs, generated types.
-- [ ] Collapsible summaries, entry details, filters/month navigation, add and edit past sessions.
-- [ ] Regression suite, signed-in phone flows, temporary seed cleanup and per-code report.
+- [x] Private week search and month-total RPCs, generated types.
+- [x] Collapsible summaries, entry details, filters/month navigation, add and edit past sessions.
+- [x] Regression suite (100 passed), signed-in phone flows in both themes, temporary session removed; build clean.
