@@ -263,7 +263,7 @@ function Running({ onEnd }: { onEnd: () => void }) {
         {showRunningExtend(remaining) && !s.paused && (
           <Button variant="outline" className="mx-auto flex" onClick={() => focusTimer.extend(5)}>+5 min</Button>
         )}
-        <div className="grid w-full grid-cols-3 gap-2">
+        <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
           {s.paused ? (
             <Button size="lg" variant="secondary" onClick={() => focusTimer.resume()} aria-label="Resume"><Play /></Button>
           ) : (
