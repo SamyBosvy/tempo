@@ -15,6 +15,8 @@ export type FocusState = {
   interruptions: Interruption[];
   /** Next calendar event start in this window (ISO), for the wrap-up warning. */
   nextEventAt: string | null;
+  /** Time is up and the user chose to carry on (counts up as +mm:ss). */
+  overtime?: boolean;
 };
 
 const KEY = "tempo.focus.v1";
@@ -87,6 +89,24 @@ export const focusTimer = {
     const s = read();
     if (!s) return;
     write({ ...s, paused: true, accumulatedMs: min * 60_000 });
+  },
+  /** Called when the countdown reaches zero, so the Finish screen opens only once. */
+  markOvertime() {
+    const s = read();
+    if (!s || s.overtime) return;
+    write({ ...s, overtime: true });
+  },
+  keepGoing() {
+    const s = read();
+    if (!s) return;
+    write({ ...s, overtime: true, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
+  },
+  /** Add minutes to the target; the countdown resumes and ends again at the new target. */
+  extend(min: number) {
+    const s = read();
+    if (!s) return;
+    const base = Math.max(s.targetMin, Math.ceil(elapsedMs(s) / 60_000));
+    write({ ...s, targetMin: base + min, overtime: false, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
   },
   clear() {
     write(null);

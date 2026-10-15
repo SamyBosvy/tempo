@@ -179,6 +179,21 @@
   }
 }
 
+.dialog-safe {
+  --dialog-top: max(16px, env(safe-area-inset-top));
+  --dialog-bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  top: var(--dialog-top);
+  bottom: var(--dialog-bottom);
+  width: auto;
+  height: fit-content;
+  max-height: min(90dvh, calc(100dvh - var(--dialog-top) - var(--dialog-bottom)));
+  margin: auto;
+  transform: none;
+  translate: 0 0;
+}
+
 .safety-dialog {
   --safety-top: max(16px, env(safe-area-inset-top));
   --safety-bottom: max(16px, env(safe-area-inset-bottom));

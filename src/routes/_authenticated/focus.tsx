@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, EnergyPicker, PageTitle } from "@/components/tempo/bits";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { effectiveFocusMinutes, focusClock, MIN_FOCUS_MIN } from "@/lib/fix-rules";
 
 export const Route = createFileRoute("/_authenticated/focus")({
   validateSearch: z.object({
@@ -57,9 +58,11 @@ function Setup() {
   const [intention, setIntention] = useState("");
   const [energy, setEnergy] = useState<number | null>(null);
   const [step, setStep] = useState<"plan" | "energy">("plan");
+  const [hint, setHint] = useState(false);
+  const effective = effectiveFocusMinutes(custom, len);
 
   const begin = (e: number | null) =>
-    focusTimer.start({ targetMin: len, intention: intention.trim().slice(0, 200), energyBefore: e, nextEventAt: until ?? null });
+    focusTimer.start({ targetMin: effective, intention: intention.trim().slice(0, 200), energyBefore: e, nextEventAt: until ?? null });
 
   if (step === "energy")
     return (
@@ -100,16 +103,24 @@ function Setup() {
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, 3);
             setCustom(v);
-            if (Number(v) >= 5) setLen(Number(v));
+            setHint(false);
           }}
+          onBlur={() => {
+            if (custom && Number(custom) < MIN_FOCUS_MIN) {
+              setCustom(String(MIN_FOCUS_MIN));
+              setHint(true);
+            }
+          }}
+          aria-describedby={hint ? "custom-hint" : undefined}
         />
+        {hint && <p id="custom-hint" role="status" className="text-sm text-muted-foreground">Minimum is {MIN_FOCUS_MIN} minutes.</p>}
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="intent">What's this block for?</Label>
         <Input id="intent" maxLength={200} className="h-12 text-base" value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="Optional" />
       </div>
       <Button size="lg" className="w-full" onClick={() => setStep("energy")}>
-        Start {len} min
+        Start {effective} min
       </Button>
     </div>
   );
@@ -132,11 +143,11 @@ function Running({ onEnd }: { onEnd: () => void }) {
     if (stale) setStaleOpen(true);
   }, [stale]);
   useEffect(() => {
-    if (remaining === 0 && !stale) onEnd();
-  }, [remaining, stale, onEnd]);
-
-  const mm = Math.floor(remaining / 60000);
-  const ss = Math.floor((remaining % 60000) / 1000);
+    if (remaining === 0 && !stale && !s.overtime) {
+      focusTimer.markOvertime();
+      onEnd();
+    }
+  }, [remaining, stale, onEnd, s.overtime]);
   const R = 120;
   const C = 2 * Math.PI * R;
 
@@ -155,9 +166,9 @@ function Running({ onEnd }: { onEnd: () => void }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={cn("font-display text-6xl font-semibold tabular", !s.paused && "animate-metronome")} role="timer" aria-live="off">
-            {mm}:{String(ss).padStart(2, "0")}
+            {focusClock(el, s.targetMin)}
           </span>
-          <span className="text-sm text-muted-foreground">{s.paused ? "Paused" : `of ${s.targetMin} min`}</span>
+          <span className="text-sm text-muted-foreground">{s.paused ? "Paused" : remaining === 0 ? "Overtime" : `of ${s.targetMin} min`}</span>
         </div>
       </div>
       <div className="grid w-full grid-cols-3 gap-2">
@@ -194,12 +205,14 @@ function Running({ onEnd }: { onEnd: () => void }) {
             <DialogTitle>Still going?</DialogTitle>
             <DialogDescription>You left a session running for {Math.floor(el / 3600_000)}h. Save it, adjust the time, or discard?</DialogDescription>
           </DialogHeader>
-          <Button onClick={() => { focusTimer.pause(); setStaleOpen(false); onEnd(); }}>Save it</Button>
           <div className="flex gap-2">
             <Input aria-label="Actual minutes" inputMode="numeric" placeholder="Minutes" className="h-12" value={adjust} onChange={(e) => setAdjust(e.target.value.replace(/\D/g, "").slice(0, 3))} />
             <Button variant="secondary" disabled={!Number(adjust)} onClick={() => { focusTimer.setElapsedMin(Number(adjust)); setStaleOpen(false); onEnd(); }}>Adjust</Button>
           </div>
-          <Button variant="ghost" onClick={() => { focusTimer.clear(); setStaleOpen(false); }}>Discard</Button>
+          <DialogFooter>
+            <Button variant="ghost" className="h-12" onClick={() => { focusTimer.clear(); setStaleOpen(false); }}>Discard</Button>
+            <Button className="h-12" onClick={() => { focusTimer.pause(); setStaleOpen(false); onEnd(); }}>Save it</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -211,6 +224,7 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
   const qc = useQueryClient();
   const [after, setAfter] = useState<number | null>(null);
   const [note, setNote] = useState("");
+  const timeUp = elapsedMs(s) >= s.targetMin * 60_000;
 
   function save(a: number | null) {
     const end = Date.now();
@@ -242,7 +256,14 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
         <Input id="got" maxLength={200} className="h-12 text-base" placeholder="Optional" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       <Button size="lg" variant="gold" className="w-full" onClick={() => save(after)}>Save session</Button>
-      <Button variant="ghost" className="w-full" onClick={onBack}>Back to timer</Button>
+      {timeUp && (
+        <div className="grid grid-cols-3 gap-2">
+          <Button variant="secondary" onClick={() => { focusTimer.extend(5); onBack(); }}>+5 min</Button>
+          <Button variant="secondary" onClick={() => { focusTimer.extend(15); onBack(); }}>+15 min</Button>
+          <Button variant="secondary" onClick={() => { focusTimer.keepGoing(); onBack(); }}>Keep going</Button>
+        </div>
+      )}
+      <Button variant="ghost" className="w-full" onClick={() => { if (timeUp) focusTimer.keepGoing(); onBack(); }}>Back to timer</Button>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, ScreenSkeleton } from "@/components/tempo/bits";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/access")({
   beforeLoad: ({ context }) => {
@@ -38,6 +39,7 @@ function Access() {
   const [manual, setManual] = useState<string | null>(null);
   const [ip, setIp] = useState(0);
   const [mp, setMp] = useState(0);
+  const [confirm, setConfirm] = useState<{ id: string; email: string } | null>(null);
 
   const invites = useQuery({
     queryKey: ["invites", ip],
@@ -140,9 +142,7 @@ function Access() {
                     <div className="text-xs text-muted-foreground">{m.role === "owner" ? "Owner" : "Member"} · {new Date(m.created_at).toLocaleDateString("en-GB")}</div>
                   </div>
                   {m.role !== "owner" && (
-                    <Button variant="ghost" size="sm" className="text-destructive" disabled={rev.isPending} onClick={() => {
-                      if (window.confirm(`Revoke ${m.email}? Their account and data will be deleted.`)) rev.mutate(m.user_id);
-                    }}>Revoke</Button>
+                    <Button variant="ghost" size="sm" className="text-destructive" disabled={rev.isPending} onClick={() => setConfirm({ id: m.user_id, email: m.email })}>Revoke</Button>
                   )}
                 </li>
               ))}
@@ -151,6 +151,21 @@ function Access() {
           </>
         )}
       </section>
+
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke access?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="break-all font-semibold text-foreground">{confirm?.email}</span> will be signed out and their account and all their data permanently deleted. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-12">Keep member</AlertDialogCancel>
+            <AlertDialogAction className="h-12 bg-destructive text-destructive-foreground" onClick={() => { if (confirm) rev.mutate(confirm.id); setConfirm(null); }}>Revoke</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
