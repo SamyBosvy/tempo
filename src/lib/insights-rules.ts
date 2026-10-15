@@ -32,7 +32,7 @@ export function meetingDays(events: CalEvent[], start: string, end: string, work
  const result: {day:string; minutes:number; work:number}[]=[];
  for(let day=new Date(`${start}T12:00:00`); localDateKey(day)<=end; day.setDate(day.getDate()+1)) {
   const a=atLocal(day,workStart).getTime(),b=atLocal(day,workEnd).getTime();
-  const ranges=events.filter(e=>!e.allDay && e.kind!=='focus').map(e=>[Math.max(a,new Date(e.start).getTime()),Math.min(b,new Date(e.end).getTime())]).filter(([s,e])=>e>s).sort((x,y)=>x[0]-y[0]);
+  const ranges=events.filter(e=>!e.allDay && e.kind!=='focus').map((e): [number,number]=>[Math.max(a,new Date(e.start).getTime()),Math.min(b,new Date(e.end).getTime())]).filter(([s,e])=>e>s).sort((x,y)=>x[0]-y[0]);
   let minutes=0, cursor=a;
   for(const [s,e] of ranges){minutes+=Math.max(0,e-Math.max(cursor,s))/60000;cursor=Math.max(cursor,e);}
   result.push({day:localDateKey(day),minutes,work:day.getDay()===0||day.getDay()===6?0:Math.max(0,b-a)/60000});

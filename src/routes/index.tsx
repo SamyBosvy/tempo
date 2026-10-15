@@ -24,6 +24,9 @@ export const Route = createFileRoute("/")({
   validateSearch: search,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Sign in · Tempo" },
       { name: "description", content: "Sign in to Tempo, your private focus companion." },
       { property: "og:title", content: "Sign in · Tempo" },

@@ -23,7 +23,7 @@ function Insights(){
  const d=q.data,known=cal.data?.status==='connected';
  const meetingMap=new Map(cal.data?.days.map(x=>[x.day,x.minutes])??[]);
  const daily=d?.by_day.map(x=>({label:dateLabel(x.day),focus:x.minutes/60,meetings:known?(meetingMap.get(x.day)??0)/60:undefined}))??[];
- const weeks=cal.data?.weeks.filter(w=>d && w.week>=d.by_week[0]?.week)??[];
+ const weeks=cal.data?.weeks.filter(w=>d && w.week>=(d.by_week[0]?.week ?? d.start))??[];
  const lastLoad=cal.data?.weeks.find(w=>w.week===d?.last_week.start)?.load??null;
  return <div className="space-y-4 min-w-0"><PageTitle>Insights</PageTitle>
   <div role="group" aria-label="Insights period" className="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">{(['7','30','all'] as const).map(p=><Button key={p} variant={period===p?'default':'ghost'} className="px-1 text-sm" aria-pressed={period===p} onClick={()=>choose(p)}>{p==='all'?'All':`${p} days`}</Button>)}</div>

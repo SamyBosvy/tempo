@@ -28,6 +28,9 @@ export const Route = createFileRoute("/_authenticated/focus")({
   }),
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Focus · Tempo" },
       { name: "description", content: "A calm countdown for deep work." },
       { property: "og:title", content: "Focus · Tempo" },

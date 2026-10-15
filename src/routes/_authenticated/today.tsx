@@ -42,6 +42,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Today · Tempo" },
       { name: "description", content: "Your day, focus windows and meetings." },
       { property: "og:title", content: "Today · Tempo" },

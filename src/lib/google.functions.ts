@@ -82,7 +82,7 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.status === 401) return { status: "reconnect", events: [] };
-      if (res.status === 404) continue;
+      if (res.status === 404) break;
       if (!res.ok) throw new Error("Google Calendar request failed");
       const body = (await res.json()) as {
         nextPageToken?: string;

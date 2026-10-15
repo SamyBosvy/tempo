@@ -15,6 +15,9 @@ import { Card, EnergyPicker, PageTitle, ScreenSkeleton } from "@/components/temp
 export const Route = createFileRoute("/_authenticated/history")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "History · Tempo" },
       { name: "description", content: "Past sessions, primes and energy." },
       { property: "og:title", content: "History · Tempo" },

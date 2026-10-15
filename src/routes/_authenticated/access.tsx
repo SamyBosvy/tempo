@@ -18,6 +18,9 @@ export const Route = createFileRoute("/_authenticated/access")({
   },
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "Access · Tempo" },
       { name: "description", content: "Invite people and manage members." },
       { property: "og:title", content: "Access · Tempo" },
