@@ -29,7 +29,7 @@ describe("B12 work hours", () => {
 });
 
 describe("B1 prime notification link", () => {
-  it("opens /prime for that meeting", () => expect(primeUrl("ev1", "2026-10-15T09:00:00Z")).toBe("/prime?event=ev1&at=2026-10-15T09%3A00%3A00Z"));
+  it("opens /prime for that meeting", () => expect(primeUrl("ev1", "2026-10-15T09:00:00Z")).toBe("/prime?event=ev1&at=2026-10-15T09%3A00%3A00Z&auto=1"));
 });
 
 describe("B5 focus overtime", () => {
