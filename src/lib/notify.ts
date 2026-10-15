@@ -29,5 +29,5 @@ export async function showAppNotification(title: string, o: NotifyOptions): Prom
 }
 
 export function primeUrl(eventId: string, startIso: string) {
-  return `/prime?${new URLSearchParams({ event: eventId, at: startIso }).toString()}`;
+  return `/prime?${new URLSearchParams({ event: eventId, at: startIso, auto: "1" }).toString()}`;
 }

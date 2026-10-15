@@ -183,7 +183,7 @@ export function useDayLogs(day: Date) {
           .lt("started_at", to.toISOString()),
         supabase
           .from("prime_sessions")
-          .select("id, event_id, at, pattern, duration_s")
+          .select("id, event_id, at, pattern, duration_s, intention")
           .gte("at", from.toISOString())
           .lt("at", to.toISOString()),
       ]);
