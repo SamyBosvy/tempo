@@ -234,13 +234,13 @@ function Running({ onEnd }: { onEnd: () => void }) {
           Meeting at {fmtTime(new Date(warnAt!))}. Wrap up?
         </Card>
       )}
-      <div className="relative h-72 w-72 max-w-full">
+      <div className="relative aspect-square w-[min(18rem,80vw)]">
         <svg viewBox="0 0 260 260" className="h-full w-full -rotate-90" aria-hidden>
           <circle cx="130" cy="130" r={R} fill="none" stroke="var(--color-secondary)" strokeWidth="10" />
           <circle cx="130" cy="130" r={R} fill="none" stroke="var(--color-primary)" strokeWidth="10" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-6xl font-semibold tabular" role="timer" aria-live="off">
+          <span className="font-display text-[clamp(2rem,14vw,3.75rem)] font-semibold tabular" role="timer" aria-live="off">
             {focusClock(el, s.targetMin)}
           </span>
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -449,11 +449,11 @@ function DoneMoment({ done, onClose }: { done: Done; onClose: () => void }) {
       </p>
       {logs.data && <p className="text-muted-foreground tabular" role="status">{todaySummary(logs.data.sessions)}</p>}
       <div className="w-full space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <Button size="lg" variant="secondary" onClick={() => { breakTimer.start(5, done.planned); onClose(); }}>Take a 5 min break</Button>
-          <Button size="lg" variant="secondary" onClick={() => { breakTimer.start(10, done.planned); onClose(); }}>10 min</Button>
+        <div className="grid gap-2">
+          <Button size="lg" variant="secondary" className="h-auto min-h-12 whitespace-normal" onClick={() => { breakTimer.start(5, done.planned); onClose(); }}>Take a 5 min break</Button>
+          <Button size="lg" variant="secondary" className="h-auto min-h-12 whitespace-normal" onClick={() => { breakTimer.start(10, done.planned); onClose(); }}>Take a 10 min break</Button>
         </div>
-        <Button size="lg" className="w-full" onClick={() => { onClose(); navigate({ to: "/today" }); }}>Skip · back to today</Button>
+        <Button size="lg" variant="ghost" className="h-auto min-h-12 w-full whitespace-normal" onClick={() => { onClose(); navigate({ to: "/today" }); }}>Skip</Button>
       </div>
     </div>
   );
