@@ -38,7 +38,7 @@ function Prime() {
   return <PrimeInner settings={settings} />;
 }
 
-function MeetingContext({ eventId, at, keywords }: { eventId: string; at?: string; keywords: string[] }) {
+function MeetingContext({ eventId, at, keywords }: { eventId: string; at: string | undefined; keywords: string[] }) {
   const date = at ? new Date(at) : new Date();
   const { events } = useDayEvents(Number.isFinite(date.getTime()) ? date : new Date(), keywords);
   const meeting = events.find((e) => e.id === eventId);
@@ -160,7 +160,7 @@ function PrimeInner({ settings }: { settings: Settings }) {
     return (
       <section className="prime-breathing flex flex-col items-center justify-center gap-6 text-center" aria-label="Breathing session">
         <div className="prime-phase relative flex w-full max-w-72 aspect-square items-center justify-center">
-          <div key={cur.occurrence} aria-hidden="true" className="breath-circle absolute inset-0 rounded-full border-2 border-primary bg-accent" style={motion}>
+          <div key={cur.occurrence} aria-hidden="true" className={cn("breath-circle absolute inset-0 rounded-full border-2 bg-accent", cur.phase.kind === "hold" ? "border-primary/25" : "border-primary")} style={motion}>
             {cur.phase.kind === "hold" && <svg className="absolute inset-0 h-full w-full -rotate-90 text-primary" viewBox="0 0 100 100">
               <circle className="breath-hold-ring" cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="1" pathLength="1" />
             </svg>}
