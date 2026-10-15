@@ -19,10 +19,11 @@ describe("B4 offline queue", () => {
     upsert.mockImplementation(async (row) => bad(row));
     enqueue("energy_ratings", { id: "bad" });
     enqueue("energy_ratings", { id: "good" });
+    await new Promise((r) => setTimeout(r, 0));
     await flush();
     const saved = upsert.mock.calls.map((c) => (c[0] as { id: string }).id);
     expect(saved).toContain("good");
-    expect(pendingRows("energy_ratings").map((r) => r.id)).toEqual(["bad"]);
+    expect(pendingRows("energy_ratings").map((r) => r["id"])).toEqual(["bad"]);
   });
 
   it("moves a row to needs attention after 3 failed attempts", async () => {
@@ -32,7 +33,7 @@ describe("B4 offline queue", () => {
     await flush();
     expect(attentionRows()).toHaveLength(0);
     await flush();
-    expect(attentionRows().map((o) => o.row.id)).toEqual(["bad"]);
+    expect(attentionRows().map((o) => o.row["id"])).toEqual(["bad"]);
     expect(pendingRows("energy_ratings")).toHaveLength(0);
   });
 

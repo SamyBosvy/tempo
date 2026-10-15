@@ -58,7 +58,7 @@ function fakeDb(row: Record<string, unknown>) {
   const from = (table: string) => ({
     select: () => ({
       eq: () => {
-        const r = { data: table === "interruptions" ? [{ id: "i1", session_id: row.id }] : row, error: null };
+        const r = { data: table === "interruptions" ? [{ id: "i1", session_id: row["id"] }] : row, error: null };
         return Object.assign(Promise.resolve(r), { maybeSingle: async () => r });
       },
     }),
