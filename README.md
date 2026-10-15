@@ -1,24 +1,17 @@
 # Tempo
 
-Implement exactly the screenshot and nothing else
+**Protect your focus. Settle before the big ones.**
 
-This project was built with [Lovable](https://lovable.dev).
+## What Tempo is
 
-## Build with Lovable
+Tempo is a private, invite-only app that works around your calendar. It reads your Google Calendar, finds the open windows in your day and turns them into focus sessions. Before stressful meetings it runs a short breathing primer (physiological sigh, box or 4-7-8). It logs energy and interruptions so over time you can see when you do your best work, and whether priming helps. It is self-help, not therapy.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ae9b9f97-a708-451b-9d71-81a2402a7b21).
+## Access
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Tempo is invite-only. Public sign-up is disabled. The owner invites people by email from **Access** (owner account only), and only invited emails can create an account.
 
-## Development
+## Stack
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+- TanStack Start + React, Tailwind CSS
+- Lovable Cloud (Supabase: auth, Postgres with row-level security)
+- Google Calendar, read-only, through
