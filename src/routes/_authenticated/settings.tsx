@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section id={`settings-${title.toLowerCase().replaceAll(" ", "-")}`} aria-labelledby={title} className="scroll-mt-32 space-y-3">
+    <section id={`settings-${title.toLowerCase().replaceAll(" ", "-")}`} aria-labelledby={title} className="scroll-mt-20 space-y-3">
       <h2 id={title} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
       <div className="space-y-4 border-t border-subtle pt-4">{children}</div>
     </section>
@@ -63,8 +63,8 @@ function SettingsPage() {
         <Button asChild variant="ghost" size="icon" aria-label="Back to Today"><Link to="/today"><ChevronLeft /></Link></Button>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
-      <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 flex flex-wrap gap-1 border-b border-subtle bg-background px-4 py-2">
-        {['Your day','Focus','Breathing','Google Calendar','Notifications','Appearance','Account','Privacy',...(role==='owner'?['Access']:[]),'About Tempo'].map(title => <Button key={title} variant="secondary" size="sm" className="h-auto min-h-8 px-2 py-1 text-xs" onClick={()=>document.getElementById(`settings-${title.toLowerCase().replaceAll(' ','-')}`)?.scrollIntoView({block:'start'})}>{title}</Button>)}
+      <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-subtle bg-background px-4 py-2">
+        {['Your day','Focus','Breathing','Google Calendar','Notifications','Appearance','Account','Privacy',...(role==='owner'?['Access']:[]),'About Tempo'].map(title => <Button key={title} variant="secondary" size="sm" className="h-10 shrink-0 px-3 text-xs" onClick={()=>document.getElementById(`settings-${title.toLowerCase().replaceAll(' ','-')}`)?.scrollIntoView({block:'start'})}>{title}</Button>)}
       </nav>
       <DaySection s={s} />
       <FocusSection s={s} />
