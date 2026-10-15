@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks"] as const;
+const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_blocks", "recurring_skips", "checkin_dismissals"] as const;
 
 /** Download every row the user owns as JSON. Pages in 1,000-row chunks. */
 export async function exportMyData() {

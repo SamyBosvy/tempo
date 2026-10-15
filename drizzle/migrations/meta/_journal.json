@@ -8,6 +8,13 @@
       "when": 1791978112967,
       "tag": "0000_tempo_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792030078844,
+      "tag": "0001_today_upgrade",
+      "breakpoints": true
     }
   ]
 }

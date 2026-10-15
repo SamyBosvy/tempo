@@ -10,6 +10,8 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   work_end: "18:00:00",
   min_focus_min: 25,
   prime_lead_min: 10,
+  daily_focus_target_min: 120,
+  meeting_buffer_min: 5,
   breath_pattern: "sigh",
   breath_minutes: 2,
   keywords: ["review", "interview", "1:1", "performance"],

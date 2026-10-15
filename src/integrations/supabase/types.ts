@@ -35,6 +35,27 @@ export type Database = {
         }
         Relationships: []
       }
+      checkin_dismissals: {
+        Row: {
+          created_at: string
+          event_id: string
+          local_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          local_date: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          local_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       energy_ratings: {
         Row: {
           at: string
@@ -75,6 +96,7 @@ export type Database = {
         Row: {
           end_at: string
           event_id: string
+          reason: string | null
           start_at: string
           stressful: boolean
           user_id: string
@@ -82,6 +104,7 @@ export type Database = {
         Insert: {
           end_at: string
           event_id: string
+          reason?: string | null
           start_at: string
           stressful: boolean
           user_id?: string
@@ -89,6 +112,7 @@ export type Database = {
         Update: {
           end_at?: string
           event_id?: string
+          reason?: string | null
           start_at?: string
           stressful?: boolean
           user_id?: string
@@ -195,6 +219,7 @@ export type Database = {
           end_at: string
           id: string
           kind: string
+          label: string | null
           start_at: string
           user_id: string
         }
@@ -202,6 +227,7 @@ export type Database = {
           end_at: string
           id?: string
           kind: string
+          label?: string | null
           start_at: string
           user_id?: string
         }
@@ -209,6 +235,7 @@ export type Database = {
           end_at?: string
           id?: string
           kind?: string
+          label?: string | null
           start_at?: string
           user_id?: string
         }
@@ -244,6 +271,68 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_blocks: {
+        Row: {
+          active: boolean
+          created_at: string
+          days: number[]
+          end_time: string
+          id: string
+          kind: string
+          label: string | null
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          days: number[]
+          end_time: string
+          id?: string
+          kind: string
+          label?: string | null
+          start_time: string
+          user_id?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          days?: number[]
+          end_time?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_skips: {
+        Row: {
+          block_id: string
+          local_date: string
+          user_id: string
+        }
+        Insert: {
+          block_id: string
+          local_date: string
+          user_id?: string
+        }
+        Update: {
+          block_id?: string
+          local_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_skips_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -270,9 +359,11 @@ export type Database = {
           breath_minutes: number
           breath_pattern: string
           calendar_ids: string[]
+          daily_focus_target_min: number
           google_connected_at: string | null
           google_email: string | null
           keywords: string[]
+          meeting_buffer_min: number
           min_focus_min: number
           notifications: boolean
           prime_lead_min: number
@@ -288,9 +379,11 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          daily_focus_target_min?: number
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
+          meeting_buffer_min?: number
           min_focus_min?: number
           notifications?: boolean
           prime_lead_min?: number
@@ -306,9 +399,11 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          daily_focus_target_min?: number
           google_connected_at?: string | null
           google_email?: string | null
           keywords?: string[]
+          meeting_buffer_min?: number
           min_focus_min?: number
           notifications?: boolean
           prime_lead_min?: number
