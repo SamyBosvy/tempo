@@ -13,3 +13,6 @@
 # Bug batch B1–B12
 - [x] B1 service-worker notifications, B3 viewport-safe dialogs, B4 queue attention list, B5 focus overtime, B6 history today, B7 min 5, B8 title, B9 local dates, B10 revoke dialog, B11 immediate delete + undo, B12 work hours.
 - [ ] Confirm prime notifications on a real Android phone — needs the published app installed on a device.
+
+# Sign-in page upgrade
+- [x] L1–L8 built and tested.

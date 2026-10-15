@@ -19,7 +19,7 @@
 - Logs (focus_sessions, interruptions, energy_ratings, prime_sessions) go through src/lib/offline-queue.ts with client-generated ids — so offline writes replay idempotently.
 - Event titles/descriptions/attendees are never stored in the database; only Google event id, times and flags — data minimisation.
 - Google refresh tokens live encrypted (AES-GCM, TOKEN_ENCRYPTION_KEY) in `google_tokens`, service-role only; all calendar calls go through server functions.
-- Accounts are created only by the `setupAccount` server function (public sign-up is disabled); the owner role comes solely from the OWNER_EMAIL secret.
+- Accounts are created only by the `setupAccount` server function (public sign-up is disabled); Google sign-in must pass `finishGoogleSignIn` (server-side allowlist check that grants the role or removes the account); the owner role comes solely from the OWNER_EMAIL secret.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Service worker is registered only via src/lib/pwa.ts, never in dev or Lovable preview.
 - Every blocking modal or gate screen (disclaimers, onboarding, consent) must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned in view on every screen size, and must never trap the user if a save fails.
