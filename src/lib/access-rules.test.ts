@@ -14,3 +14,16 @@ describe("owner rule", () => {
     expect(buildInviteLink("https://x.app", "A@B.com")).toBe("https://x.app/?setup=1&email=a%40b.com");
   });
 });
+
+import { passwordStrength, safeNextPath } from "./access-rules";
+describe("L8 safe next path", () => {
+  it("keeps same-origin paths", () => expect(safeNextPath("/history")).toBe("/history"));
+  it("rejects protocol-relative paths", () => expect(safeNextPath("//evil.com")).toBe("/today"));
+  it("rejects absolute URLs", () => expect(safeNextPath("https://evil.com")).toBe("/today"));
+  it("defaults to /today", () => expect(safeNextPath(undefined)).toBe("/today"));
+});
+describe("L5 password strength", () => {
+  it("under 8 is weak", () => expect(passwordStrength("Ab1!")).toBe("weak"));
+  it("8 letters+digits is okay", () => expect(passwordStrength("abcdefg1")).toBe("okay"));
+  it("12+ mixed is strong", () => expect(passwordStrength("Abcdefgh123!")).toBe("strong"));
+});
