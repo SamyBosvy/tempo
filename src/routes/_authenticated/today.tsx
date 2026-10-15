@@ -448,8 +448,8 @@ function CheckIns({ due, primed, intents, dayKey }: { due: DayEvent[]; primed: S
                 {intents.get(e.id) && (
                   <div className="space-y-2">
                     <p className="break-words text-sm">You wanted: <span className="font-semibold">{intents.get(e.id)}</span></p>
+                    <p className="text-sm text-muted-foreground">Did you get it?</p>
                     <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Did you get it?">
-                      <span className="sr-only">Did you get it?</span>
                       {INTENT_OUTCOMES.map((o) => (
                         <Button key={o.value} variant="outline" role="radio" aria-checked={outcome[e.id] === o.value}
                           className={cn(outcome[e.id] === o.value ? "border-primary bg-accent" : "border-border bg-card")}
