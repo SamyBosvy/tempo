@@ -16,3 +16,6 @@
 
 # Sign-in page upgrade
 - [x] L1–L8 built and tested.
+
+# Today upgrade
+- [x] T1–T13 built, migrated and tested.
