@@ -2,7 +2,10 @@
 // so refreshing, leaving or locking the phone never loses it.
 import { useSyncExternalStore } from "react";
 
-export type Interruption = { reason: "meeting" | "message" | "distracted" | "other"; at: string };
+export type InterruptReason = "meeting" | "message" | "distracted" | "other" | "custom";
+export type Interruption = { reason: InterruptReason; source?: "self" | "external"; customLabel?: string | null; at: string };
+export const MAX_PARKED = 10;
+export const PARKED_MAX_LEN = 140;
 export type FocusState = {
   id: string;
   targetMin: number;
@@ -17,6 +20,10 @@ export type FocusState = {
   nextEventAt: string | null;
   /** Time is up and the user chose to carry on (counts up as +mm:ss). */
   overtime?: boolean;
+  /** End signal (chime/vibration/notification) already fired for the current target. */
+  signalled?: boolean;
+  /** One-line thoughts parked during the session (max 10). */
+  parked?: string[];
 };
 
 const KEY = "tempo.focus.v1";
@@ -79,10 +86,30 @@ export const focusTimer = {
     if (!s || !s.paused) return;
     write({ ...s, paused: false, resumedAt: Date.now() });
   },
-  interrupt(reason: Interruption["reason"]) {
+  /** Log an interruption and pause, so the interruption doesn't count as focus. */
+  interrupt(reason: InterruptReason, source?: "self" | "external", customLabel?: string | null) {
     const s = read();
     if (!s) return;
-    write({ ...s, interruptions: [...s.interruptions, { reason, at: new Date().toISOString() }] });
+    const now = Date.now();
+    const entry: Interruption = { reason, source, customLabel: reason === "custom" ? (customLabel ?? "").slice(0, 30) : null, at: new Date(now).toISOString() };
+    write({
+      ...s,
+      interruptions: [...s.interruptions, entry],
+      ...(s.paused ? {} : { paused: true, accumulatedMs: elapsedMs(s, now) }),
+    });
+  },
+  /** Park a thought without pausing. Returns false when full or empty. */
+  park(text: string) {
+    const s = read();
+    const t = text.trim().slice(0, PARKED_MAX_LEN);
+    if (!s || !t || (s.parked?.length ?? 0) >= MAX_PARKED) return false;
+    write({ ...s, parked: [...(s.parked ?? []), t] });
+    return true;
+  },
+  markSignalled() {
+    const s = read();
+    if (!s || s.signalled) return;
+    write({ ...s, signalled: true });
   },
   /** Cap elapsed time (used by "adjust the time"). */
   setElapsedMin(min: number) {
@@ -106,12 +133,51 @@ export const focusTimer = {
     const s = read();
     if (!s) return;
     const base = Math.max(s.targetMin, Math.ceil(elapsedMs(s) / 60_000));
-    write({ ...s, targetMin: base + min, overtime: false, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
+    write({ ...s, targetMin: base + min, overtime: false, signalled: false, ...(s.paused ? { paused: false, resumedAt: Date.now() } : {}) });
   },
   clear() {
     write(null);
   },
 };
+
+/** Break timer: separate from focus, never logged. */
+export type BreakState = { endsAt: number; minutes: number; lastLen: number };
+const BKEY = "tempo.break.v1";
+let bcache: BreakState | null | undefined;
+function readBreak(): BreakState | null {
+  if (typeof window === "undefined") return null;
+  if (bcache === undefined) {
+    try {
+      bcache = JSON.parse(localStorage.getItem(BKEY) ?? "null");
+    } catch {
+      bcache = null;
+    }
+  }
+  return bcache ?? null;
+}
+export const breakTimer = {
+  get: readBreak,
+  start(minutes: number, lastLen: number, now = Date.now()) {
+    bcache = { endsAt: now + minutes * 60_000, minutes, lastLen };
+    localStorage.setItem(BKEY, JSON.stringify(bcache));
+    listeners.forEach((l) => l());
+  },
+  clear() {
+    bcache = null;
+    localStorage.removeItem(BKEY);
+    listeners.forEach((l) => l());
+  },
+};
+export function useBreakState() {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    readBreak,
+    () => null,
+  );
+}
 
 export function useFocusState() {
   return useSyncExternalStore(
