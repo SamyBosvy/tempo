@@ -40,3 +40,8 @@
 - [x] Insights charts, comparison cards, and Monday weekly review.
 - [x] Rule tests (92 passed), temporary-data phone checks in both themes, cleanup and full suite; Monday dismissal and remembered period verified.
 - [ ] Verify live calendar-derived meeting bars and 12-week load — account has no connected calendar; zero/unavailable states and calculation rules verified.
+
+# History upgrade (H1–H7)
+- [ ] Private week search and month-total RPCs, generated types.
+- [ ] Collapsible summaries, entry details, filters/month navigation, add and edit past sessions.
+- [ ] Regression suite, signed-in phone flows, temporary seed cleanup and per-code report.
