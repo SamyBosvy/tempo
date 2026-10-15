@@ -17,6 +17,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { bindQueryClient, startQueueSync } from "@/lib/offline-queue";
 import { registerServiceWorker } from "@/lib/pwa";
+import { trackQuerySync } from '@/lib/sync-status';
 
 function NotFoundComponent() {
   return (
@@ -113,6 +114,7 @@ function RootComponent() {
   useEffect(() => {
     bindQueryClient(queryClient);
     const stop = startQueueSync();
+    const stopTracking = trackQuerySync(queryClient);
     registerServiceWorker();
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -125,6 +127,7 @@ function RootComponent() {
     });
     return () => {
       stop();
+      stopTracking();
       data.subscription.unsubscribe();
     };
   }, [queryClient, router]);

@@ -16,6 +16,7 @@ import { useImmersive } from "@/lib/immersive";
 import { GoogleConnectResult } from "@/components/tempo/GoogleConnectResult";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
+import { useApplyTheme } from '@/lib/theme';
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -48,11 +49,7 @@ function AppShell() {
   const now = useNow(1000);
   const immersive = useImmersive();
 
-  useEffect(() => {
-    const light = settings?.theme === "light";
-    document.documentElement.classList.toggle("light", light);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#F7F4EE" : "#0F1B2D");
-  }, [settings?.theme]);
+  useApplyTheme(settings?.theme);
 
   const remaining = focus ? Math.max(0, focus.targetMin * 60_000 - elapsedMs(focus, now)) : 0;
 

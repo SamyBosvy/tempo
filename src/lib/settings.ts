@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   end_sound: true,
   end_notify: true,
   custom_interruption: null,
-  theme: "dark",
+  theme: "system",
   safety_ack_at: null,
   google_email: null,
   google_connected_at: null,

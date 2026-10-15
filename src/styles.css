@@ -61,6 +61,7 @@
 }
 
 :root {
+  --theme-colour: #0F1B2D;
   --radius: 1rem;
   --prime-background: oklch(0.145 0.014 258.3);
   --prime-foreground: oklch(0.953 0.013 86.8);
@@ -119,6 +120,7 @@
 }
 
 .light {
+  --theme-colour: #F7F4EE;
   /* #F7F4EE */
   --background: oklch(0.968 0.009 84.6);
   /* navy — 15.74:1 */

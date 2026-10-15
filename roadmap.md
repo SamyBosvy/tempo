@@ -45,3 +45,8 @@
 - [x] Private week search and month-total RPCs, generated types.
 - [x] Collapsible summaries, entry details, filters/month navigation, add and edit past sessions.
 - [x] Regression suite (100 passed), signed-in phone flows in both themes, temporary session removed; build clean.
+
+# History fixes and Settings S1–S5
+- [x] All-time filtered History, visible month scale and rule tests.
+- [x] Reorganise Settings, security sheet, keyword chips, live System theme, sync status.
+- [x] Migration and generated types, full suite, signed-in 320×568 and 390×844 checks in both themes; temporary History rows removed and preferences restored.
