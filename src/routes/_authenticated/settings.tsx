@@ -21,7 +21,7 @@ import { Card, ScreenSkeleton, SAFETY_TEXT } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { cn } from "@/lib/utils";
 import { validWorkHours } from "@/lib/fix-rules";
-import { discardAttention, retryAttention, useAttentionRows, useQueueSize, flush } from "@/lib/offline-queue";
+import { discardAttention, retryAttention, useAttentionRows, useQueueSize, flush, pendingRows, attentionRows } from "@/lib/offline-queue";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { addKeyword } from '@/lib/settings-rules';
@@ -430,6 +430,6 @@ function KeywordChips({s}:{s:Settings}) {
 function OfflineItems(){const count=useQueueSize();return <p role="status" className="text-sm text-muted-foreground">{count?`${count} offline ${count===1?'entry':'entries'} waiting to sync.`:'No offline entries waiting.'}</p>;}
 function SyncSection(){
  const qc=useQueryClient(),last=useLastSynced(),[busy,setBusy]=useState(false);
- async function sync(){setBusy(true);try{if(!navigator.onLine)throw new Error('offline');await flush();await qc.refetchQueries({type:'active'}, {throwOnError:true});toast.success('Synced.');}catch{toast.error("Couldn't sync. Try again when you're online.");}finally{setBusy(false);}}
+ async function sync(){setBusy(true);try{if(!navigator.onLine)throw new Error('offline');await flush();await qc.refetchQueries({type:'active'}, {throwOnError:true});if(Object.keys(TABLE_LABEL).some(table=>pendingRows(table as Parameters<typeof pendingRows>[0]).length)||attentionRows().length){toast.error('Some entries still need attention. Check Privacy.');}else toast.success('Synced.');}catch{toast.error("Couldn't sync. Try again when you're online.");}finally{setBusy(false);}}
  return <footer className="space-y-3 border-t border-subtle pt-4 text-sm"><p className="text-muted-foreground">Tempo {APP_VERSION}</p><p role="status">{last?`Last synced ${new Date(last).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Not synced yet'}</p><Button variant="outline" className="w-full" disabled={busy} onClick={sync}><RefreshCw className={busy?'animate-spin':''}/>{busy?'Syncing…':'Sync now'}</Button></footer>;
 }

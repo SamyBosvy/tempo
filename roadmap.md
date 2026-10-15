@@ -47,6 +47,6 @@
 - [x] Regression suite (100 passed), signed-in phone flows in both themes, temporary session removed; build clean.
 
 # History fixes and Settings S1–S5
-- [ ] All-time filtered History, visible month scale and rule tests.
-- [ ] Reorganise Settings, security sheet, keyword chips, live System theme, sync status.
-- [ ] Migrations, full suite and signed-in phone checks in both themes.
+- [x] All-time filtered History, visible month scale and rule tests.
+- [x] Reorganise Settings, security sheet, keyword chips, live System theme, sync status.
+- [x] Migration and generated types, full suite, signed-in 320×568 and 390×844 checks in both themes; temporary History rows removed and preferences restored.
