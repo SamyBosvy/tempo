@@ -67,6 +67,10 @@ function PrimeInner({ settings }: { settings: Settings }) {
   }
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [stage]);
+
+  useEffect(() => {
     if (stage !== "breathe") return;
     setImmersive(true);
     document.documentElement.classList.add("prime-room");
