@@ -23,3 +23,7 @@
 # Focus upgrade
 - [x] F1–F13 built, migrated and tested.
 - [ ] Confirm the end notification while the phone is locked — needs the published app on a real phone.
+
+# Prime upgrade
+- [ ] P1–P5 phase cues, quiet room, meeting context and remembered eyes-closed mode.
+- [ ] Test phase logic, full suite and signed-in phone views in both themes.

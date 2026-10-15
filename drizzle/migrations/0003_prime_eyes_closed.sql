@@ -1,0 +1,1 @@
+ALTER TABLE public.user_settings ADD COLUMN eyes_closed boolean NOT NULL DEFAULT false;
