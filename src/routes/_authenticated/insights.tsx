@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { localDateFromKey } from "@/lib/fix-rules";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
@@ -85,7 +86,7 @@ function Insights() {
         <h2 className="mb-3 font-semibold">Focus minutes per day</h2>
         {d.by_day.length === 0 ? <Empty /> : (
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={d.by_day.map((x) => ({ ...x, label: new Date(x.day).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
+            <BarChart data={d.by_day.map((x) => ({ ...x, label: localDateFromKey(String(x.day)).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
               <CartesianGrid stroke="var(--color-subtle)" vertical={false} />
               <XAxis dataKey="label" tick={axis} interval="preserveStartEnd" />
               <YAxis tick={axis} width={32} />
@@ -100,7 +101,7 @@ function Insights() {
         <h2 className="mb-3 font-semibold">Focus minutes per week</h2>
         {d.by_week.length === 0 ? <Empty /> : (
           <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={d.by_week.map((x) => ({ ...x, label: new Date(x.week).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
+            <BarChart data={d.by_week.map((x) => ({ ...x, label: localDateFromKey(String(x.week)).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) }))}>
               <XAxis dataKey="label" tick={axis} />
               <YAxis tick={axis} width={32} />
               <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
