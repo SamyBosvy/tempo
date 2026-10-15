@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useRouteContext } from "@tanstack/r
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,12 @@ import { Card, ScreenSkeleton, SAFETY_TEXT } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { cn } from "@/lib/utils";
 import { validWorkHours } from "@/lib/fix-rules";
-import { discardAttention, retryAttention, useAttentionRows } from "@/lib/offline-queue";
+import { discardAttention, retryAttention, useAttentionRows, useQueueSize, flush } from "@/lib/offline-queue";
+
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { addKeyword } from '@/lib/settings-rules';
+import { useLastSynced } from '@/lib/sync-status';
+import { APP_VERSION } from '@/lib/version';
 
 export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: z.object({ google: z.string().optional() }),
@@ -41,9 +46,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section aria-labelledby={title} className="space-y-3">
+    <section id={`settings-${title.toLowerCase().replaceAll(" ", "-")}`} aria-labelledby={title} className="scroll-mt-32 space-y-3">
       <h2 id={title} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
-      <Card className="space-y-4">{children}</Card>
+      <div className="space-y-4 border-t border-subtle pt-4">{children}</div>
     </section>
   );
 }
@@ -58,12 +63,17 @@ function SettingsPage() {
         <Button asChild variant="ghost" size="icon" aria-label="Back to Today"><Link to="/today"><ChevronLeft /></Link></Button>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
-      <AttentionSection />
-      <AccountSection />
+      <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 flex flex-wrap gap-1 border-b border-subtle bg-background px-4 py-2">
+        {['Your day','Focus','Breathing','Google Calendar','Notifications','Appearance','Account','Privacy',...(role==='owner'?['Access']:[]),'About Tempo'].map(title => <Button key={title} variant="secondary" size="sm" className="h-auto min-h-8 px-2 py-1 text-xs" onClick={()=>document.getElementById(`settings-${title.toLowerCase().replaceAll(' ','-')}`)?.scrollIntoView({block:'start'})}>{title}</Button>)}
+      </nav>
       <DaySection s={s} />
       <FocusSection s={s} />
       <BreathSection s={s} />
       <CalendarSection s={s} />
+      <NotificationSection s={s} />
+      <AppearanceSection s={s} />
+      <AccountSection />
+      <PrivacySection />
       {role === "owner" && (
         <Section title="Access">
           <Link to="/access" className="flex h-12 items-center justify-between font-semibold">
@@ -71,11 +81,10 @@ function SettingsPage() {
           </Link>
         </Section>
       )}
-      <PrivacySection />
       <Section title="About Tempo">
         {SAFETY_TEXT.map((p) => <p key={p} className="text-sm text-muted-foreground">{p}</p>)}
       </Section>
-      <Button variant="outline" className="w-full" onClick={signOut}>Sign out</Button>
+      <SyncSection />
     </div>
   );
 }
@@ -86,7 +95,8 @@ function AttentionSection() {
   const rows = useAttentionRows();
   if (!rows.length) return null;
   return (
-    <Section title="Needs attention">
+    <div className="space-y-3">
+      <h3 className="font-semibold">Needs attention</h3>
       <p className="text-sm text-muted-foreground">These entries couldn't be saved after 3 tries. Everything else is still syncing.</p>
       <ul className="space-y-2">
         {rows.map((o) => {
@@ -102,7 +112,7 @@ function AttentionSection() {
           );
         })}
       </ul>
-    </Section>
+    </div>
   );
 }
 
@@ -112,6 +122,7 @@ async function signOut() {
 }
 
 function AccountSection() {
+  const [securityOpen, setSecurityOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [cur, setCur] = useState("");
   const [pw, setPw] = useState("");
@@ -149,6 +160,12 @@ function AccountSection() {
   return (
     <Section title="Account">
       <p className="text-sm text-muted-foreground">Signed in as <span className="text-foreground">{email}</span></p>
+      <Button variant="outline" className="w-full justify-between" onClick={()=>setSecurityOpen(true)}>Account security<ChevronRight/></Button>
+      <Button variant="outline" className="w-full" onClick={signOut}>Sign out</Button>
+      <Sheet open={securityOpen} onOpenChange={setSecurityOpen}>
+        <SheetContent side="bottom" className="mx-auto flex max-h-[90dvh] max-w-lg flex-col gap-4 rounded-t-xl p-0 pb-[env(safe-area-inset-bottom)]">
+          <SheetHeader className="shrink-0 px-5 pt-5 text-left"><SheetTitle>Account security</SheetTitle><SheetDescription>Change your password or email.</SheetDescription></SheetHeader>
+          <div className="min-h-0 space-y-6 overflow-y-auto px-5">
       <form onSubmit={changePw} className="space-y-2">
         <p className="font-semibold">Change password</p>
         <Label htmlFor="cp" className="sr-only">Current password</Label>
@@ -160,19 +177,23 @@ function AccountSection() {
       <form onSubmit={changeEmail} className="space-y-2">
         <p className="font-semibold">Change email</p>
         <Label htmlFor="ne" className="sr-only">New email</Label>
-        <Input id="ne" type="email" placeholder="New email" className="h-12" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+        <Input id="ne" type="email" autoComplete="email" placeholder="New email" className="h-12" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
         <Label htmlFor="cp2" className="sr-only">Current password</Label>
         <Input id="cp2" type="password" autoComplete="current-password" placeholder="Current password" className="h-12" value={cur2} onChange={(e) => setCur2(e.target.value)} />
         <Button type="submit" variant="secondary" className="w-full">Update email</Button>
         {msg && <p role="status" className="text-sm text-accent-text">{msg}</p>}
       </form>
+          </div>
+          <footer className="shrink-0 border-t border-subtle bg-background p-4"><SheetClose asChild><Button className="min-h-12 w-full">Done</Button></SheetClose></footer>
+        </SheetContent>
+      </Sheet>
     </Section>
   );
 }
 
 function DaySection({ s }: { s: Settings }) {
   const save = useSaveSettings();
-  const [kw, setKw] = useState(s.keywords.join(", "));
+
   const [ws, setWs] = useState(s.work_start.slice(0, 5));
   const [we, setWe] = useState(s.work_end.slice(0, 5));
   const hoursOk = validWorkHours(ws, we);
@@ -207,20 +228,7 @@ function DaySection({ s }: { s: Settings }) {
         </div>
       </div>
       <Stepper label="Prime lead time" value={s.prime_lead_min} unit="min" min={5} max={30} step={5} onChange={(v) => save.mutate({ prime_lead_min: v })} />
-      <div className="space-y-1.5">
-        <Label htmlFor="kw">Stressful-meeting keywords</Label>
-        <Input id="kw" className="h-12" value={kw} onChange={(e) => setKw(e.target.value)}
-          onBlur={() => save.mutate({ keywords: kw.split(",").map((k) => k.trim()).filter(Boolean).slice(0, 30) })} />
-        <p className="text-xs text-muted-foreground">Comma-separated. Matched on this device; titles aren't stored.</p>
-      </div>
-      <Toggle label="Prime reminders (while Tempo is open)" checked={s.notifications} onChange={async (v) => {
-        if (v && typeof Notification !== "undefined" && Notification.permission !== "granted") {
-          const p = await Notification.requestPermission();
-          if (p !== "granted") { toast.error("Notifications are blocked in your browser settings."); return; }
-        }
-        save.mutate({ notifications: v });
-      }} />
-      <Toggle label="Light mode" checked={s.theme === "light"} onChange={(v) => save.mutate({ theme: v ? "light" : "dark" })} />
+      <KeywordChips s={s} />
     </Section>
   );
 }
@@ -231,11 +239,6 @@ function FocusSection({ s }: { s: Settings }) {
   return (
     <Section title="Focus">
       <Toggle label="Keep screen awake during focus" checked={s.wake_lock} onChange={(v) => save.mutate({ wake_lock: v })} />
-      <Toggle label="Sound at end" checked={s.end_sound} onChange={(v) => save.mutate({ end_sound: v })} />
-      <Toggle label="Notify at end" checked={s.end_notify} onChange={async (v) => {
-        if (v && typeof Notification !== "undefined" && Notification.permission === "default") await Notification.requestPermission();
-        save.mutate({ end_notify: v });
-      }} />
       <div className="space-y-1.5">
         <Label htmlFor="custom-int">Your own interruption reason</Label>
         <Input id="custom-int" maxLength={30} className="h-12" placeholder="e.g. Kids" value={custom} onChange={(e) => setCustom(e.target.value)}
@@ -255,15 +258,15 @@ function BreathSection({ s }: { s: Settings }) {
     <Section title="Breathing">
       <div className="grid gap-2" role="radiogroup" aria-label="Default pattern">
         {(Object.keys(PATTERNS) as BreathPattern[]).map((p) => (
-          <button key={p} role="radio" aria-checked={s.breath_pattern === p} onClick={() => save.mutate({ breath_pattern: p })}
-            className={cn("tap rounded-xl border px-3 text-left font-semibold", s.breath_pattern === p ? "border-primary bg-accent" : "border-border")}>
+          <Button variant="outline" key={p} role="radio" aria-checked={s.breath_pattern === p} onClick={() => save.mutate({ breath_pattern: p })}
+            className={cn("tap h-auto flex-col items-start whitespace-normal rounded-xl border px-3 py-3 text-left font-semibold", s.breath_pattern === p ? "border-primary bg-accent" : "border-border")}>
             {PATTERNS[p].name}
             {PATTERNS[p].when && <span className="block text-sm font-normal text-muted-foreground">{PATTERNS[p].when}</span>}
-          </button>
+          </Button>
         ))}
       </div>
       <Stepper label="Length" value={s.breath_minutes} unit="min" min={1} max={5} step={1} onChange={(v) => save.mutate({ breath_minutes: v })} />
-      <Toggle label="Soft vibration" checked={s.vibration} onChange={(v) => save.mutate({ vibration: v })} />
+
     </Section>
   );
 }
@@ -285,7 +288,7 @@ function CalendarSection({ s }: { s: Settings }) {
           <p className="text-sm">Connected{s.google_email ? <> as <span className="font-semibold">{s.google_email}</span></> : ""}. Read-only.</p>
           <fieldset className="space-y-2">
             <legend className="mb-1 font-semibold">Calendars to include</legend>
-            {cals.data!.calendars.map((c) => {
+            {cals.data?.calendars.map((c) => {
               const on = s.calendar_ids.includes(c.id);
               return (
                 <label key={c.id} className="flex min-h-12 items-center gap-3">
@@ -338,6 +341,8 @@ function PrivacySection() {
       <p className="text-sm text-muted-foreground">
         Tempo reads your calendar only to show your day and find focus time. Event details are not stored. Your data is private, not shared, not sold. No analytics or trackers.
       </p>
+      <OfflineItems />
+      <AttentionSection />
       <Button variant="secondary" className="w-full" onClick={doExport}>Export my data</Button>
       <Button variant="outline" className="w-full text-destructive" onClick={() => setOpen(true)}>Delete account</Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -389,4 +394,38 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
   );
+}
+
+function NotificationSection({s}:{s:Settings}) {
+  const save=useSaveSettings();
+  return <Section title="Notifications">
+      <Toggle label="Prime reminders (while Tempo is open)" checked={s.notifications} onChange={async (v) => {
+        if (v && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+          const p = await Notification.requestPermission();
+          if (p !== "granted") { toast.error("Notifications are blocked in your browser settings."); return; }
+        }
+        save.mutate({ notifications: v });
+      }} />
+      <Toggle label="Sound at end" checked={s.end_sound} onChange={(v) => save.mutate({ end_sound: v })} />
+      <Toggle label="Notify at end" checked={s.end_notify} onChange={async (v) => {
+        if (v && typeof Notification !== "undefined" && Notification.permission === "default") await Notification.requestPermission();
+        save.mutate({ end_notify: v });
+      }} />
+      <Toggle label="Soft vibration" checked={s.vibration} onChange={v=>save.mutate({vibration:v})}/>
+  </Section>;
+}
+function AppearanceSection({s}:{s:Settings}) {
+  const save=useSaveSettings();
+  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme[0].toUpperCase()+theme.slice(1)}</Button>)}</div></Section>;
+}
+function KeywordChips({s}:{s:Settings}) {
+  const save=useSaveSettings(),[input,setInput]=useState(''),[error,setError]=useState('');
+  function add(){const result=addKeyword(s.keywords,input);if(!result.ok){setError(result.error);return;}save.mutate({keywords:result.keywords});setInput('');setError('');}
+  return <div className="space-y-2"><Label htmlFor="kw">Stressful-meeting keywords</Label><ul className="flex flex-wrap gap-2">{s.keywords.map(keyword=><li key={keyword} className="inline-flex max-w-full items-center gap-1 rounded-lg border border-subtle bg-secondary pl-2"><span className="min-w-0 break-all text-sm">{keyword}</span><Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label={`Remove keyword ${keyword}`} onClick={()=>{save.mutate({keywords:s.keywords.filter(k=>k!==keyword)});setError('');}}><X className="h-4 w-4"/></Button></li>)}</ul><div className="flex gap-2"><Input id="kw" aria-label="Add keyword" placeholder="Add keyword" maxLength={40} value={input} aria-invalid={!!error} aria-describedby={error?'keyword-error':undefined} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add();}}}/><Button variant="outline" size="icon" aria-label="Add keyword" onClick={add}><Plus/></Button></div>{error&&<p id="keyword-error" role="alert" className="text-sm text-destructive">{error}</p>}</div>;
+}
+function OfflineItems(){const count=useQueueSize();return <p role="status" className="text-sm text-muted-foreground">{count?`${count} offline ${count===1?'entry':'entries'} waiting to sync.`:'No offline entries waiting.'}</p>;}
+function SyncSection(){
+ const qc=useQueryClient(),last=useLastSynced(),[busy,setBusy]=useState(false);
+ async function sync(){setBusy(true);try{if(!navigator.onLine)throw new Error('offline');await flush();await qc.refetchQueries({type:'active'}, {throwOnError:true});toast.success('Synced.');}catch{toast.error("Couldn't sync. Try again when you're online.");}finally{setBusy(false);}}
+ return <footer className="space-y-3 border-t border-subtle pt-4 text-sm"><p className="text-muted-foreground">Tempo {APP_VERSION}</p><p role="status">{last?`Last synced ${new Date(last).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Not synced yet'}</p><Button variant="outline" className="w-full" disabled={busy} onClick={sync}><RefreshCw className={busy?'animate-spin':''}/>{busy?'Syncing…':'Sync now'}</Button></footer>;
 }
