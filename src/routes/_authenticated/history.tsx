@@ -1,225 +1,46 @@
-import { OUTCOME_LABEL, type IntentOutcome } from "@/lib/checkin";
-import { createFileRoute } from "@tanstack/react-router";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { deleteWithUndo, restoreDeleted } from "@/lib/history-delete";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { fmtTime, localDateKey, startOfLocalDay } from "@/lib/timeline";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, EnergyPicker, PageTitle, ScreenSkeleton } from "@/components/tempo/bits";
-
-export const Route = createFileRoute("/_authenticated/history")({
-  head: () => ({
-    meta: [
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, nofollow" },
-      { title: "History · Tempo" },
-      { name: "description", content: "Past sessions, primes and energy." },
-      { property: "og:title", content: "History · Tempo" },
-      { property: "og:description", content: "Past sessions, primes and energy." },
-    ],
-  }),
-  component: History,
-});
-
-type Entry =
-  | { type: "session"; id: string; at: string; actual_min: number; intention: string | null; done_note: string | null; energy_before: number | null; energy_after: number | null; interruptions: number }
-  | { type: "prime"; id: string; at: string; pattern: string; duration_s: number; intention: string | null }
-  | { type: "rating"; id: string; at: string; kind: string; rating: number; note: string | null; intent_outcome: string | null };
-
-const WEEK = 7;
-const REASONS: Record<string, string> = { sigh: "Physiological sigh", box: "Box breathing", "478": "4-7-8" };
-
-function History() {
-  const qc = useQueryClient();
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [edit, setEdit] = useState<Entry | null>(null);
-
-  // Today and past dates, one week per page (page 0 ends at tomorrow 00:00).
-  const q = useInfiniteQuery({
-    queryKey: ["history"],
-    initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
-      const to = startOfLocalDay(new Date());
-      to.setDate(to.getDate() + 1 - pageParam * WEEK);
-      const from = new Date(to);
-      from.setDate(from.getDate() - WEEK);
-      const [s, p, r] = await Promise.all([
-        supabase.from("focus_sessions").select("id, started_at, actual_min, intention, done_note, energy_before, energy_after, interruptions(count)").gte("started_at", from.toISOString()).lt("started_at", to.toISOString()).order("started_at", { ascending: false }),
-        supabase.from("prime_sessions").select("id, at, pattern, duration_s, intention").gte("at", from.toISOString()).lt("at", to.toISOString()),
-        supabase.from("energy_ratings").select("id, at, kind, rating, note, intent_outcome").gte("at", from.toISOString()).lt("at", to.toISOString()),
-      ]);
-      if (s.error) throw s.error;
-      if (p.error) throw p.error;
-      if (r.error) throw r.error;
-      const entries: Entry[] = [
-        ...s.data.map((x) => ({ type: "session" as const, id: x.id, at: x.started_at, actual_min: x.actual_min, intention: x.intention, done_note: x.done_note, energy_before: x.energy_before, energy_after: x.energy_after, interruptions: (x.interruptions as unknown as { count: number }[])?.[0]?.count ?? 0 })),
-        ...p.data.map((x) => ({ type: "prime" as const, ...x })),
-        ...r.data.map((x) => ({ type: "rating" as const, ...x })),
-      ].sort((a, b) => b.at.localeCompare(a.at));
-      return { entries, page: pageParam };
-    },
-    getNextPageParam: (last) => (last.page < 52 ? last.page + 1 : undefined),
-  });
-
-  const table = (e: Entry) => (e.type === "session" ? "focus_sessions" : e.type === "prime" ? "prime_sessions" : "energy_ratings");
-
-  const refresh = () => {
-    qc.invalidateQueries({ queryKey: ["history"] });
-    qc.invalidateQueries({ queryKey: ["insights"] });
-    qc.invalidateQueries({ queryKey: ["daylogs"] });
-  };
-  const unhide = (id: string) => setHidden((h) => { const n = new Set(h); n.delete(id); return n; });
-
-  // Deletes in the database straight away; Undo re-inserts the saved row.
-  async function remove(e: Entry) {
-    setHidden((h) => new Set(h).add(e.id));
-    const res = await deleteWithUndo(supabase, table(e), e.id);
-    if (!res.ok) {
-      toast.error("Couldn't delete that. Try again.");
-      unhide(e.id);
-      return;
-    }
-    refresh();
-    toast("Deleted.", {
-      duration: 8000,
-      action: {
-        label: "Undo",
-        onClick: async () => {
-          const ok = await restoreDeleted(supabase, res.saved);
-          if (!ok) { toast.error("Couldn't restore that entry."); return; }
-          unhide(e.id);
-          refresh();
-        },
-      },
-    });
-  }
-
-  if (q.isLoading) return <ScreenSkeleton rows={6} />;
-  if (q.isError) return <p role="alert">Couldn't load history. Try again.</p>;
-
-  const all = (q.data?.pages ?? []).flatMap((p) => p.entries).filter((e) => !hidden.has(e.id));
-  const byDay = new Map<string, Entry[]>();
-  for (const e of all) {
-    const k = localDateKey(new Date(e.at));
-    byDay.set(k, [...(byDay.get(k) ?? []), e]);
-  }
-
-  return (
-    <div className="space-y-4">
-      <PageTitle>History</PageTitle>
-      {byDay.size === 0 && <Card><p className="text-muted-foreground">Nothing logged yet.</p></Card>}
-      {[...byDay.entries()].map(([k, list]) => (
-        <section key={k} aria-labelledby={`d-${k}`}>
-          <h2 id={`d-${k}`} className="mb-2 text-sm font-semibold text-muted-foreground">
-            {new Date(k + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-          </h2>
-          <ul className="space-y-2">
-            {list.map((e) => (
-              <li key={e.id}>
-                <button className="w-full rounded-2xl border border-subtle bg-card p-3 text-left" onClick={() => setEdit(e)}>
-                  <Line e={e} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-      {q.hasNextPage && (
-        <Button variant="outline" className="w-full" disabled={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>
-          {q.isFetchingNextPage ? "Loading…" : "Earlier"}
-        </Button>
-      )}
-      {edit && <EditDialog entry={edit} onClose={() => setEdit(null)} onDelete={() => { remove(edit); setEdit(null); }} table={table(edit)} />}
-    </div>
-  );
+import {createFileRoute} from '@tanstack/react-router';
+import {useInfiniteQuery,useQuery,useQueryClient} from '@tanstack/react-query';
+import {useEffect,useState} from 'react';
+import {Timer,Wind,Battery,ChevronDown,ChevronRight,ChevronLeft,Plus,Search} from 'lucide-react';
+import {toast} from 'sonner';
+import {supabase} from '@/integrations/supabase/client';
+import {useSettings} from '@/lib/settings';
+import {deleteWithUndo,restoreDeleted} from '@/lib/history-delete';
+import {historyQuery,daySummary,historyRibbon,type HistoryEntry,type HistoryType} from '@/lib/history-rules';
+import {fmtDuration,fmtTime,localDateKey,startOfLocalDay} from '@/lib/timeline';
+import {OUTCOME_LABEL,type IntentOutcome} from '@/lib/checkin';
+import {PATTERNS,type BreathPattern} from '@/lib/breath';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Card,PageTitle,ScreenSkeleton} from '@/components/tempo/bits';
+import {HistorySessionDialog,refreshHistory} from '@/components/tempo/HistorySessionDialog';
+import {cn} from '@/lib/utils';
+export const Route=createFileRoute('/_authenticated/history')({head:()=>({meta:[{title:'History · Tempo'},{name:'description',content:'Your focus sessions, primes and energy by day.'},{property:'og:title',content:'History · Tempo'},{property:'og:description',content:'Your focus sessions, primes and energy by day.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'},{name:'robots',content:'noindex, nofollow'}]}),component:History});
+function History(){
+ const qc=useQueryClient(),{data:settings}=useSettings();const today=localDateKey(new Date());const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+ const [anchor,setAnchor]=useState(today),[view,setView]=useState<'list'|'month'>('list'),[type,setType]=useState<HistoryType>('all'),[search,setSearch]=useState(''),[term,setTerm]=useState(''),[edit,setEdit]=useState<HistoryEntry|null>(null),[adding,setAdding]=useState(false),[hidden,setHidden]=useState(new Set<string>()),[expanded,setExpanded]=useState(new Set([today,localDateKey(yesterday)])),[jump,setJump]=useState<string|null>(null);
+ useEffect(()=>{const t=setTimeout(()=>setTerm(search),250);return()=>clearTimeout(t);},[search]);
+ const q=useInfiniteQuery({queryKey:['history',anchor,type,term],initialPageParam:{week:0,offset:0},queryFn:async({pageParam})=>{const {data,error}=await supabase.rpc('get_history_week',historyQuery(anchor,type,term,pageParam.week,pageParam.offset));if(error){toast.error("Couldn't load history.");throw error;}const res=data as unknown as {entries:HistoryEntry[];more:boolean};return {...res,...pageParam};},getNextPageParam:last=>last.more?{week:last.week,offset:last.offset+500}:{week:last.week+1,offset:0},enabled:view==='list'});
+ useEffect(()=>{if(!jump||!q.data)return;const el=document.getElementById(`history-${jump}`);if(el){el.scrollIntoView({block:'start'});setJump(null);}},[jump,q.data]);
+ const all=(q.data?.pages??[]).flatMap(p=>p.entries).filter(e=>!hidden.has(e.id));const byDay=new Map<string,HistoryEntry[]>();for(const e of all){const k=localDateKey(new Date(e.at));byDay.set(k,[...(byDay.get(k)??[]),e]);}
+ const table=(e:HistoryEntry)=>e.type==='session'?'focus_sessions':e.type==='prime'?'prime_sessions':'energy_ratings';
+ async function remove(e:HistoryEntry){setHidden(h=>new Set(h).add(e.id));const res=await deleteWithUndo(supabase,table(e),e.id);const unhide=()=>setHidden(h=>{const n=new Set(h);n.delete(e.id);return n;});if(!res.ok){toast.error("Couldn't delete that. Try again.");unhide();return;}refreshHistory(qc);toast('Deleted.',{duration:8000,action:{label:'Undo',onClick:async()=>{if(!await restoreDeleted(supabase,res.saved)){toast.error("Couldn't restore that entry.");return;}unhide();refreshHistory(qc);}}});}
+ const filtered=type!=='all'||!!term;
+ return <div className="space-y-4"><PageTitle>History</PageTitle><div className="grid grid-cols-2 gap-1 rounded-xl bg-secondary p-1" role="group" aria-label="History view">{(['list','month'] as const).map(v=><Button key={v} variant={view===v?'default':'ghost'} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='list'?'List':'Month'}</Button>)}</div>
+ <Button variant="outline" className="w-full" onClick={()=>setAdding(true)}><Plus/>Add a past session</Button>
+ {view==='month'?<MonthView onDay={day=>{setAnchor(day);setJump(day);setExpanded(x=>new Set(x).add(day));setView('list');setType('all');setSearch('');setTerm('');}}/>:<>
+ <div role="group" aria-label="Entry type" className="grid grid-cols-4 gap-1">{([['all','All'],['session','Focus'],['prime','Prime'],['rating','Energy']] as const).map(([v,label])=><Button key={v} variant={type===v?'default':'outline'} className="px-1 text-sm" aria-pressed={type===v} onClick={()=>setType(v)}>{label}</Button>)}</div><div className="relative"><Search className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground"/><Input aria-label="Search history" placeholder="Search intentions and notes" className="pl-10" value={search} onChange={e=>setSearch(e.target.value)}/></div>
+ {(filtered||anchor!==today)&&<Button variant="link" onClick={()=>{setType('all');setSearch('');setTerm('');setAnchor(today);}}>Clear filters</Button>}
+ {q.isLoading?<ScreenSkeleton rows={4}/>:q.isError?<p role="alert">Couldn't load history. <Button variant="link" onClick={()=>q.refetch()}>Try again</Button></p>:<>
+ {!byDay.size&&<Card><p className="text-muted-foreground">{filtered?'No matches':'Nothing logged this week.'}</p></Card>}
+ {[...byDay].sort(([a],[b])=>b.localeCompare(a)).map(([day,list])=>{const sum=daySummary(list),open=expanded.has(day);return <section key={day} id={`history-${day}`} className="scroll-mt-4"><h2><Button variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal px-0 text-left text-sm" aria-expanded={open} aria-controls={`entries-${day}`} onClick={()=>setExpanded(x=>{const n=new Set(x);if(n.has(day))n.delete(day);else n.add(day);return n;})}><span>{day===today?'Today · ':''}{new Date(`${day}T12:00:00`).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})} · {fmtDuration(sum.minutes)} focus · {sum.primes} prime{sum.primes===1?'':'s'} · energy {sum.morning??'–'} → {sum.last??'–'}{filtered?' · matches':''}</span>{open?<ChevronDown className="shrink-0"/>:<ChevronRight className="shrink-0"/>}</Button></h2>
+ <div className="relative mb-3 h-3 overflow-hidden rounded-full bg-secondary" aria-label="Day focus and prime ribbon">{historyRibbon(list,day,settings?.work_start??'08:00',settings?.work_end??'18:00').map(s=><span key={s.id} className={cn('absolute inset-y-0',s.type==='session'?'bg-primary':'bg-gold')} style={{left:`${s.left}%`,width:`${s.width}%`}}/>)}</div>
+ {open&&<ul id={`entries-${day}`} className="space-y-2">{list.map(e=><li key={e.id}><Button variant="ghost" className="h-auto min-h-16 w-full items-start justify-start whitespace-normal rounded-2xl border border-subtle bg-card p-3 text-left font-normal" onClick={()=>setEdit(e)}><EntryLine e={e}/></Button></li>)}</ul>}</section>;})}
+ <Button variant="outline" className="w-full" disabled={q.isFetchingNextPage} onClick={()=>q.fetchNextPage()}>{q.isFetchingNextPage?'Loading…':q.data?.pages.at(-1)?.more?'More this week':'Earlier'}</Button></>}
+ </>}
+ {adding&&<HistorySessionDialog onClose={()=>{setAdding(false);setAnchor(today);}}/>}{edit&&<HistorySessionDialog entry={edit} onClose={()=>setEdit(null)} onDelete={()=>{void remove(edit);setEdit(null);}}/>}</div>;
 }
-
-function Line({ e }: { e: Entry }) {
-  if (e.type === "session")
-    return (
-      <>
-        <div className="font-semibold tabular">
-          Focus · {e.actual_min} min{e.energy_before || e.energy_after ? ` · energy ${e.energy_before ?? "–"} → ${e.energy_after ?? "–"}` : ""}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {fmtTime(e.at)}{e.intention ? ` · ${e.intention}` : ""}{e.interruptions ? ` · ${e.interruptions} interruption${e.interruptions > 1 ? "s" : ""}` : ""}
-        </div>
-      </>
-    );
-  if (e.type === "prime")
-    return (
-      <>
-        <div className="font-semibold">Prime · {REASONS[e.pattern] ?? e.pattern}</div>
-        <div className="text-sm text-muted-foreground">{fmtTime(e.at)} · {Math.round(e.duration_s / 60)} min{e.intention ? ` · ${e.intention}` : ""}</div>
-      </>
-    );
-  return (
-    <>
-      <div className="font-semibold">{e.kind === "morning" ? "Morning energy" : "After meeting"} · {e.rating}</div>
-      <div className="text-sm text-muted-foreground">{fmtTime(e.at)}{e.intent_outcome && e.intent_outcome in OUTCOME_LABEL ? ` · ${OUTCOME_LABEL[e.intent_outcome as IntentOutcome]}` : ""}{e.note ? ` · ${e.note}` : ""}</div>
-    </>
-  );
-}
-
-function EditDialog({ entry, onClose, onDelete, table }: { entry: Entry; onClose: () => void; onDelete: () => void; table: "focus_sessions" | "prime_sessions" | "energy_ratings" }) {
-  const qc = useQueryClient();
-  const [text, setText] = useState(entry.type === "rating" ? entry.note ?? "" : entry.intention ?? "");
-  const [note, setNote] = useState(entry.type === "session" ? entry.done_note ?? "" : "");
-  const [eb, setEb] = useState(entry.type === "session" ? entry.energy_before : null);
-  const [ea, setEa] = useState(entry.type === "session" ? entry.energy_after : entry.type === "rating" ? entry.rating : null);
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    const patch =
-      entry.type === "session"
-        ? { intention: text.trim() || null, done_note: note.trim() || null, energy_before: eb, energy_after: ea }
-        : entry.type === "prime"
-          ? { intention: text.trim() || null }
-          : { note: text.trim() || null, rating: ea ?? 3 };
-    const { error } = await supabase.from(table).update(patch as never).eq("id", entry.id);
-    setBusy(false);
-    if (error) { toast.error("Couldn't save. Try again."); return; }
-    qc.invalidateQueries({ queryKey: ["history"] });
-    qc.invalidateQueries({ queryKey: ["insights"] });
-    onClose();
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Edit entry</DialogTitle></DialogHeader>
-        <div className="space-y-1.5">
-          <Label htmlFor="et">{entry.type === "rating" ? "Note" : "Intention"}</Label>
-          <Input id="et" maxLength={200} className="h-12" value={text} onChange={(e) => setText(e.target.value)} />
-        </div>
-        {entry.type === "session" && (
-          <>
-            <div className="space-y-1.5">
-              <Label htmlFor="en">What got done</Label>
-              <Input id="en" maxLength={200} className="h-12" value={note} onChange={(e) => setNote(e.target.value)} />
-            </div>
-            <p className="text-sm font-semibold">Energy before</p>
-            <EnergyPicker label="Energy before" value={eb} onChange={setEb} />
-          </>
-        )}
-        {entry.type !== "prime" && (
-          <>
-            <p className="text-sm font-semibold">{entry.type === "session" ? "Energy after" : "Energy"}</p>
-            <EnergyPicker label="Energy" value={ea} onChange={setEa} />
-          </>
-        )}
-        <DialogFooter>
-          <Button variant="ghost" className="h-12 text-destructive" onClick={onDelete}>Delete</Button>
-          <Button size="lg" disabled={busy} onClick={save}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+function EntryLine({e}:{e:HistoryEntry}){const Icon=e.type==='session'?Timer:e.type==='prime'?Wind:Battery;return <><Icon className={cn('mt-1 shrink-0',e.type==='session'?'text-accent-text':e.type==='prime'?'text-gold-text':'text-muted-foreground')}/><div className="min-w-0 flex-1 break-words"><p className="font-semibold">{e.type==='session'?`Focus · ${e.actual_min} min`:e.type==='prime'?`Prime · ${PATTERNS[e.pattern as BreathPattern]?.name??e.pattern}`:`${e.kind==='morning'?'Morning energy':'After meeting'} · ${e.rating}`}</p><p className="text-sm text-muted-foreground">{fmtTime(e.at)} · {e.type==='rating'?e.note:e.intention}</p>{e.type==='session'&&<>{(e.energy_before||e.energy_after)&&<p className="text-sm">Energy {e.energy_before??'–'} → {e.energy_after??'–'}</p>}{e.done_note&&<p className="text-sm">{e.done_note}</p>}{e.interruptions.map(i=><p key={i.id} className="text-xs text-muted-foreground">{i.source==='self'?'Self':i.source==='external'?'External':'Not specified'} · {i.custom_label??i.reason}</p>)}{e.parked_thoughts?.map((t,i)=><p key={i} className="text-sm">Parked · {t}</p>)}</>}{e.intent_outcome&&e.intent_outcome in OUTCOME_LABEL&&<p className="text-sm">{OUTCOME_LABEL[e.intent_outcome as IntentOutcome]}</p>}</div></>;}
+function MonthView({onDay}:{onDay:(day:string)=>void}){const [month,setMonth]=useState(()=>{const d=startOfLocalDay(new Date());d.setDate(1);return d;}),tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+ const q=useQuery({queryKey:['history-month',tz,localDateKey(month)],queryFn:async()=>{const {data,error}=await supabase.rpc('get_history_month',{_tz:tz,_month:localDateKey(month)});if(error){toast.error("Couldn't load the month.");throw error;}return data as unknown as {day:string;minutes:number;primes:number}[];}});
+ const max=Math.max(1,...(q.data??[]).map(d=>d.minutes)),padding=(month.getDay()+6)%7,today=localDateKey(new Date());return <section><div className="mb-3 flex items-center justify-between"><Button variant="ghost" size="icon" aria-label="Previous month" onClick={()=>setMonth(d=>new Date(d.getFullYear(),d.getMonth()-1,1))}><ChevronLeft/></Button><h2 className="font-semibold">{month.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><Button variant="ghost" size="icon" aria-label="Next month" disabled={month.getFullYear()===new Date().getFullYear()&&month.getMonth()===new Date().getMonth()} onClick={()=>setMonth(d=>new Date(d.getFullYear(),d.getMonth()+1,1))}><ChevronRight/></Button></div>{q.isLoading?<ScreenSkeleton rows={2}/>:q.isError?<p role="alert">Couldn't load the month.</p>:<><div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">{['M','T','W','T','F','S','S'].map((x,i)=><span key={i}>{x}</span>)}</div><div className="mt-2 grid grid-cols-7 gap-1">{Array.from({length:padding},(_,i)=><span key={`pad-${i}`}/>)}{q.data?.map(d=><Button key={d.day} variant="ghost" className="relative h-12 min-w-0 overflow-hidden rounded-lg border border-subtle p-0 text-sm" disabled={d.day>today} aria-label={`${d.day}, ${d.minutes} focus minutes, ${d.primes} primes`} onClick={()=>onDay(d.day)}><span aria-hidden className="absolute inset-0 bg-primary" style={{opacity:d.minutes/max*.2}}/><span className="relative">{Number(d.day.slice(8))}</span>{d.primes>0&&<span aria-hidden className="absolute bottom-1 h-1 w-1 rounded-full bg-gold"/>}</Button>)}</div><p className="mt-3 text-xs text-muted-foreground">Shade · focus minutes · gold dot · primes</p></>}</section>;}
