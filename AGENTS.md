@@ -34,4 +34,6 @@
 - Insights period summaries and completed-week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, so calendar details are never persisted.
 - Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once, so percentages represent occupied working time.
 
-- History uses security-invoker week search (500-entry continuation within the same week) and per-month day aggregates; add-session logs use the queue, edits preserve ids, and all date validation compares local input against UTC timestamps.
+- History uses security-invoker weekly browsing with within-week continuation, all-time filtered search with bounded pages, and per-month day aggregates; add-session logs use the queue, edits preserve ids, and validation compares local input against UTC timestamps.
+- Theme resolution lives in a shared browser hook that listens to device preference changes and reads theme-colour from CSS tokens, so System stays live without persisting computed choices.
+- Sync status observes successful non-manual query cache updates and queue deliveries; the release identifier lives in a build constant, so status never claims an optimistic edit was synced.
