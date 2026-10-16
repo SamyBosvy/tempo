@@ -448,7 +448,7 @@ function WeeklyHours({ s }: { s: Settings }) {
                 <span className="text-sm font-medium">{name.slice(0, 3)}</span>
               </label>
               {h.on ? (
-                <div className="flex min-w-0 flex-1 items-center gap-1">
+                <div className="flex w-full min-w-0 items-center gap-1">
                   <Input type="time" className="h-12 min-w-0 flex-1 px-2" aria-label={`${name} start`} value={h.start} aria-invalid={!!err} aria-describedby={err ? `wh-err-${d}` : undefined} onChange={(e) => set(d, { start: e.target.value })} onBlur={() => commit(draft)} />
                   <span aria-hidden className="text-muted-foreground">–</span>
                   <Input type="time" className="h-12 min-w-0 flex-1 px-2" aria-label={`${name} end`} value={h.end} aria-invalid={!!err} aria-describedby={err ? `wh-err-${d}` : undefined} onChange={(e) => set(d, { end: e.target.value })} onBlur={() => commit(draft)} />
