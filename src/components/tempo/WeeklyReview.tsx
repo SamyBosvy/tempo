@@ -45,7 +45,7 @@ export function WeeklyReviewContent({
       <p>
         Meeting load ·{" "}
         {calendarKnown && load !== null
-          ? `${Math.round(load)}% of weekday work hours`
+          ? `${Math.round(load)}% of work hours`
           : "calendar unavailable"}
       </p>
       <p>
