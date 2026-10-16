@@ -145,13 +145,13 @@ export const getCalendarList = createServerFn({ method: "POST" })
     }
     if (!token) return { status: "disconnected" as const, calendars: [] };
     const res = await fetch(
-      "https://www.googleapis.com/calendar/v3/users/me/calendarList?fields=items(id,summary,primary)",
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?fields=items(id,summary,primary,backgroundColor)",
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (res.status === 401) return { status: "reconnect" as const, calendars: [] };
     if (!res.ok) throw new Error("Could not load calendars");
     const body = (await res.json()) as {
-      items?: { id: string; summary: string; primary?: boolean }[];
+      items?: { id: string; summary: string; primary?: boolean; backgroundColor?: string }[];
     };
     return {
       status: "connected" as const,
@@ -159,6 +159,7 @@ export const getCalendarList = createServerFn({ method: "POST" })
         id: c.primary ? "primary" : c.id,
         name: c.summary,
         primary: !!c.primary,
+        color: /^#[0-9a-f]{6}$/i.test(c.backgroundColor ?? "") ? c.backgroundColor! : null,
       })),
     };
   });

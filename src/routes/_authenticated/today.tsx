@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Settings as Gear, Plus, Wind, Zap, CalendarOff, MoreHorizontal, Play, Repeat } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getCalendarList } from "@/lib/google.functions";
+import { workWindow } from "@/lib/work-hours";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/settings";
@@ -88,18 +91,29 @@ function Today() {
   const { events, status, isLoading, offline } = useDayEvents(day, keywords);
   const logs = useDayLogs(day);
   const dismissals = useCheckinDismissals(day);
+  const listCals = useServerFn(getCalendarList);
+  const cals = useQuery({ queryKey: ["calendars"], queryFn: () => listCals(), staleTime: 10 * 60_000, enabled: (settings?.calendar_ids.length ?? 0) > 1 });
+  const calColours = new Map((cals.data?.calendars ?? []).filter((c) => c.color).map((c) => [c.id, c.color!]));
 
   if (!settings || isLoading) return <TodaySkeleton />;
 
-  const workStart = atLocal(day, settings.work_start);
-  const workEnd = atLocal(day, settings.work_end);
-  const timed = events.filter((e) => !e.allDay);
+  const work = workWindow(settings, day);
+  const workStart = work.start;
+  const workEnd = work.end;
+  const dayOff = !work.on;
+  const multiCal = settings.calendar_ids.length > 1;
+  const timed = events
+    .filter((e) => !e.allDay)
+    .map((e) => (multiCal && e.calendarId && calColours.get(e.calendarId) ? { ...e, color: calColours.get(e.calendarId)! } : e));
   const allDay = events.filter((e) => e.allDay);
   const nowDate = new Date(now);
   const slots = computeSlots(timed, workStart, workEnd, settings.min_focus_min, isToday ? nowDate : undefined, settings.meeting_buffer_min);
   const windows = slots.filter((s) => s.isWindow);
   const best = slots.find((s) => s.best) ?? null;
-  const meetMin = meetingMinutes(timed, workStart, workEnd);
+  const dayEnd = new Date(startOfLocalDay(day));
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  // On a day off meetings still count across the whole day.
+  const meetMin = dayOff ? meetingMinutes(timed, startOfLocalDay(day), dayEnd) : meetingMinutes(timed, workStart, workEnd);
   const focusMin = (logs.data?.sessions ?? []).reduce((a, s) => a + (s.actual_min ?? 0), 0);
   const morning = logs.data?.ratings.find((r) => r.kind === "morning");
   const nextEvent = timed.find((e) => new Date(e.start).getTime() > now && e.kind === "meeting");
@@ -190,13 +204,24 @@ function Today() {
         </Button>
       </div>
 
-      <DayRibbonLive
-        segments={segments}
-        nowFrac={isToday ? nowFraction(nowDate, workStart, workEnd) : null}
-        startLabel={fmtTime(workStart)}
-        endLabel={fmtTime(workEnd)}
-        onSegment={onSegment}
-      />
+      {dayOff ? (
+        <Card className="flex items-center justify-between gap-3">
+          <p className="text-sm"><span className="font-semibold">Day off</span> · no work hours set</p>
+          {!isPast && (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/focus"><Play /> Start focus</Link>
+            </Button>
+          )}
+        </Card>
+      ) : (
+        <DayRibbonLive
+          segments={segments}
+          nowFrac={isToday ? nowFraction(nowDate, workStart, workEnd) : null}
+          startLabel={fmtTime(workStart)}
+          endLabel={fmtTime(workEnd)}
+          onSegment={onSegment}
+        />
+      )}
 
       {(status === "reconnect" || (status === "disconnected" && settings.google_email)) && (
         <Card className="flex items-center justify-between gap-3">

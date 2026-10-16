@@ -64,7 +64,7 @@ describe("Insights evidence rules", () => {
         source: "google" as const,
       },
     ];
-    const days = meetingDays(events, "2026-10-12", "2026-10-13", "08:00", "18:00");
+    const days = meetingDays(events, "2026-10-12", "2026-10-13", () => ({ on: true, start: "08:00", end: "18:00" }));
     expect(days.map((x) => x.minutes)).toEqual([90, 0]);
     expect(meetingWeeks(days)[0]?.load).toBe(7.5);
   });
