@@ -37,3 +37,5 @@
 - History uses security-invoker weekly browsing with within-week continuation, all-time filtered search with bounded pages, and per-month day aggregates; add-session logs use the queue, edits preserve ids, and validation compares local input against UTC timestamps.
 - Theme resolution lives in a shared browser hook that listens to device preference changes and reads theme-colour from CSS tokens, so System stays live without persisting computed choices.
 - Sync status observes successful non-manual query cache updates and queue deliveries; the release identifier lives in a build constant, so status never claims an optimistic edit was synced.
+- Working hours resolve per weekday through src/lib/work-hours.ts (work_hours jsonb, legacy work_start/work_end as fallback); every screen asks it for the day's window, so a day off yields no focus slots without special cases.
+- Calendar colours come from calendarList at read time and are applied only to strips/segments when several calendars are included, so text contrast never depends on Google's palette.
