@@ -97,8 +97,7 @@ export function meetingDays(
   events: CalEvent[],
   start: string,
   end: string,
-  workStart: string,
-  workEnd: string,
+  hoursFor: (day: Date) => { on: boolean; start: string; end: string },
 ) {
   const result: { day: string; minutes: number; work: number }[] = [];
   for (
@@ -106,8 +105,9 @@ export function meetingDays(
     localDateKey(day) <= end;
     day.setDate(day.getDate() + 1)
   ) {
-    const a = atLocal(day, workStart).getTime(),
-      b = atLocal(day, workEnd).getTime();
+    const h = hoursFor(day);
+    const a = atLocal(day, h.start).getTime(),
+      b = h.on ? atLocal(day, h.end).getTime() : a;
     const ranges = events
       .filter((e) => !e.allDay && e.kind !== "focus")
       .map((e): [number, number] => [
@@ -125,7 +125,7 @@ export function meetingDays(
     result.push({
       day: localDateKey(day),
       minutes,
-      work: day.getDay() === 0 || day.getDay() === 6 ? 0 : Math.max(0, b - a) / 60000,
+      work: Math.max(0, b - a) / 60000,
     });
   }
   return result;

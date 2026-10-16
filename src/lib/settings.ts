@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { defaultWorkHours } from "./work-hours";
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Settings = Tables<"user_settings">;
@@ -8,6 +9,7 @@ export type Settings = Tables<"user_settings">;
 export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   work_start: "08:00:00",
   work_end: "18:00:00",
+  work_hours: defaultWorkHours(),
   min_focus_min: 25,
   prime_lead_min: 10,
   daily_focus_target_min: 120,
