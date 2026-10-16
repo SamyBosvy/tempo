@@ -390,6 +390,7 @@ export type Database = {
           vibration: boolean
           wake_lock: boolean
           work_end: string
+          work_hours: Json
           work_start: string
         }
         Insert: {
@@ -415,6 +416,7 @@ export type Database = {
           vibration?: boolean
           wake_lock?: boolean
           work_end?: string
+          work_hours?: Json
           work_start?: string
         }
         Update: {
@@ -440,6 +442,7 @@ export type Database = {
           vibration?: boolean
           wake_lock?: boolean
           work_end?: string
+          work_hours?: Json
           work_start?: string
         }
         Relationships: []
