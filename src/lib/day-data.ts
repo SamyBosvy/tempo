@@ -16,6 +16,9 @@ export type DayEvent = CalEvent & {
   manualId?: string;
   recurringId?: string;
   label?: string | null;
+  calendarId?: string;
+  /** Source calendar colour; used only for strips/segments, never text. */
+  color?: string;
 };
 
 function dayRange(day: Date) {

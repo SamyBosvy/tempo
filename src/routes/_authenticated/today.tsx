@@ -607,6 +607,7 @@ function Timeline({ events, slots, isToday, readOnly, now, day }: { events: DayE
             e.kind === "focus" ? "border-primary border-l-primary bg-card" : "bg-secondary",
             isMeeting && (e.stressful ? "border-gold-text border-l-gold" : "border-subtle border-l-muted-foreground"),
           )}
+          style={isMeeting && !e.stressful && e.color ? { borderLeftColor: e.color } : undefined}
         >
           <button
             className="min-w-0 flex-1 text-left disabled:cursor-default"

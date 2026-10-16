@@ -79,7 +79,7 @@ export function DayRibbonLive({
             onClick={() => onSegment(s.id)}
             aria-label={`${SEG_LABEL[s.kind]}: ${s.title}`}
             className={cn("absolute top-1 bottom-1 rounded-full", SEG_CLASS[s.kind])}
-            style={{ left: `${s.x * 100}%`, width: `max(6px, ${s.w * 100}%)` }}
+            style={{ left: `${s.x * 100}%`, width: `max(6px, ${s.w * 100}%)`, ...(s.color ? { backgroundColor: s.color } : {}) }}
           />
         ))}
         {nowFrac !== null && (
