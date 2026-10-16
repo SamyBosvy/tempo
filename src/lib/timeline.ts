@@ -167,10 +167,10 @@ export function backToBackRun(events: CalEvent[], from: Date, to: Date, now: Dat
 }
 
 // ---------- Day ribbon ----------
-export type RibbonSegment = { id: string; kind: "meeting" | "stressful" | "focus" | "manual-focus"; x: number; w: number };
+export type RibbonSegment = { id: string; kind: "meeting" | "stressful" | "focus" | "manual-focus"; x: number; w: number; color?: string };
 /** Segments as fractions (0–1) of the working day. */
 export function ribbonSegments(
-  events: { id: string; start: string; end: string; allDay: boolean; kind?: string; stressful?: boolean }[],
+  events: { id: string; start: string; end: string; allDay: boolean; kind?: string; stressful?: boolean; color?: string }[],
   slots: Slot[],
   workStart: Date,
   workEnd: Date,
@@ -192,7 +192,8 @@ export function ribbonSegments(
     if (e.allDay) continue;
     const f = frac(new Date(e.start), new Date(e.end));
     if (!f) continue;
-    out.push({ id: e.id, kind: e.kind === "focus" ? "manual-focus" : e.stressful ? "stressful" : "meeting", ...f });
+    const kind = e.kind === "focus" ? "manual-focus" : e.stressful ? "stressful" : "meeting";
+    out.push({ id: e.id, kind, ...f, ...(kind === "meeting" && e.color ? { color: e.color } : {}) });
   }
   return out.sort((a, b) => a.x - b.x);
 }
@@ -206,4 +207,23 @@ export function nowFraction(now: Date, workStart: Date, workEnd: Date) {
 
 export function fmtMinutesShort(start: string, end: string) {
   return fmtDuration((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+}
+
+/** First (earliest) keyword occurrence in a title, split for highlighting. */
+export function keywordMatch(title: string, keywords: string[]) {
+  const t = title.toLowerCase();
+  let best: { keyword: string; index: number; length: number } | null = null;
+  for (const k of keywords) {
+    const kw = k.trim().toLowerCase();
+    if (!kw) continue;
+    const i = t.indexOf(kw);
+    if (i >= 0 && (!best || i < best.index || (i === best.index && kw.length > best.length))) best = { keyword: k.trim(), index: i, length: kw.length };
+  }
+  if (!best) return null;
+  return {
+    keyword: best.keyword,
+    before: title.slice(0, best.index),
+    match: title.slice(best.index, best.index + best.length),
+    after: title.slice(best.index + best.length),
+  };
 }

@@ -57,6 +57,13 @@
       "when": 1792099587182,
       "tag": "0007_history_search_system_theme",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792186409807,
+      "tag": "0008_per_day_work_hours",
+      "breakpoints": true
     }
   ]
 }

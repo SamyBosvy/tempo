@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getCalendarEvents } from "./google.functions";
 import { useSettings } from "./settings";
+import { dayHours } from "./work-hours";
 import { localDateFromKey } from "./fix-rules";
 import { localDateKey, startOfLocalDay } from "./timeline";
 import {
@@ -40,6 +41,7 @@ export function useInsightCalendar(d: InsightData | undefined) {
       settings?.calendar_ids,
       settings?.work_start,
       settings?.work_end,
+      settings?.work_hours,
     ],
     enabled: !!d && !!settings,
     queryFn: async () => {
@@ -60,8 +62,7 @@ export function useInsightCalendar(d: InsightData | undefined) {
         res.events.map((e) => ({ ...e, source: "google" as const })),
         from,
         d.end,
-        settings.work_start,
-        settings.work_end,
+        (day) => dayHours(settings, day.getDay()),
       );
       return {
         status: res.status,

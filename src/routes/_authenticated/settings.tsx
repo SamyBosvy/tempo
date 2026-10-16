@@ -20,7 +20,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, ScreenSkeleton, SAFETY_TEXT } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { cn } from "@/lib/utils";
-import { validWorkHours } from "@/lib/fix-rules";
+import { copyMondayToWeekdays, dayError, DAY_NAMES, resolveWorkHours, WEEK_ORDER, type WorkHours } from "@/lib/work-hours";
+import { getCalendarEvents } from "@/lib/google.functions";
+import { fmtTime, keywordMatch } from "@/lib/timeline";
+import { mondayKey } from "@/lib/insights-rules";
+import { localDateFromKey } from "@/lib/fix-rules";
 import { discardAttention, retryAttention, useAttentionRows, useQueueSize, flush, pendingRows, attentionRows } from "@/lib/offline-queue";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
@@ -193,30 +197,9 @@ function AccountSection() {
 
 function DaySection({ s }: { s: Settings }) {
   const save = useSaveSettings();
-
-  const [ws, setWs] = useState(s.work_start.slice(0, 5));
-  const [we, setWe] = useState(s.work_end.slice(0, 5));
-  const hoursOk = validWorkHours(ws, we);
-  const saveHours = () => {
-    if (!ws || !we || !hoursOk) return;
-    if (ws === s.work_start.slice(0, 5) && we === s.work_end.slice(0, 5)) return;
-    save.mutate({ work_start: ws, work_end: we });
-  };
   return (
     <Section title="Your day">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="ws">Work starts</Label>
-          <Input id="ws" type="time" className="h-12" value={ws} aria-invalid={!hoursOk} aria-describedby={!hoursOk ? "hours-err" : undefined} onChange={(e) => setWs(e.target.value)} onBlur={saveHours} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="we">Work ends</Label>
-          <Input id="we" type="time" className="h-12" value={we} aria-invalid={!hoursOk} aria-describedby={!hoursOk ? "hours-err" : undefined} onChange={(e) => setWe(e.target.value)} onBlur={saveHours} />
-        </div>
-      </div>
-      {!hoursOk && <p id="hours-err" role="alert" className="text-sm text-destructive">Work end must be after work start. Not saved.</p>}
-
-
+      <WeeklyHours s={s} />
       <div className="space-y-1.5">
         <span className="font-medium" id="buf-label">Buffer after meetings</span>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="buf-label">
@@ -285,6 +268,7 @@ function CalendarSection({ s }: { s: Settings }) {
   return (
     <Section title="Google Calendar">
       <KeywordChips s={s} />
+      <KeywordPreview s={s} />
       {cals.isLoading ? (
         <div role="status" aria-busy="true" className="h-12 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
       ) : connected ? (
@@ -300,6 +284,7 @@ function CalendarSection({ s }: { s: Settings }) {
                     const next = v ? [...s.calendar_ids, c.id] : s.calendar_ids.filter((x) => x !== c.id);
                     save.mutate({ calendar_ids: next.length ? next : ["primary"] }, { onSuccess: () => qc.invalidateQueries({ queryKey: ["gcal"] }) });
                   }} className="h-6 w-6" />
+                  <span aria-hidden className="h-4 w-4 shrink-0 rounded-full border border-subtle" style={c.color ? { backgroundColor: c.color } : undefined} />
                   <span>{c.name}</span>
                 </label>
               );
@@ -432,4 +417,95 @@ function SyncSection(){
  const qc=useQueryClient(),last=useLastSynced(),[busy,setBusy]=useState(false);
  async function sync(){setBusy(true);try{if(!navigator.onLine)throw new Error('offline');await flush();await qc.refetchQueries({type:'active'}, {throwOnError:true});if(Object.keys(TABLE_LABEL).some(table=>pendingRows(table as Parameters<typeof pendingRows>[0]).length)||attentionRows().length){toast.error('Some entries still need attention. Check Privacy.');}else toast.success('Synced.');}catch{toast.error("Couldn't sync. Try again when you're online.");}finally{setBusy(false);}}
  return <footer className="space-y-3 border-t border-subtle pt-4 text-sm"><p className="text-muted-foreground">Tempo {APP_VERSION}</p><p role="status">{last?`Last synced ${new Date(last).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Not synced yet'}</p><Button variant="outline" className="w-full" disabled={busy} onClick={sync}><RefreshCw className={busy?'animate-spin':''}/>{busy?'Syncing…':'Sync now'}</Button></footer>;
+}
+
+function WeeklyHours({ s }: { s: Settings }) {
+  const save = useSaveSettings();
+  const stored = resolveWorkHours(s);
+  const [draft, setDraft] = useState<WorkHours>(stored);
+  function commit(next: WorkHours) {
+    const valid: WorkHours = {};
+    for (let d = 0; d < 7; d++) valid[d] = dayError(next[d]!) ? stored[d]! : next[d]!;
+    if (JSON.stringify(valid) !== JSON.stringify(stored)) save.mutate({ work_hours: valid });
+  }
+  const set = (d: number, patch: Partial<WorkHours[string]>, now = false) => {
+    const next = { ...draft, [d]: { ...draft[d]!, ...patch } };
+    setDraft(next);
+    if (now) commit(next);
+  };
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-1 font-semibold">Working hours</legend>
+      {WEEK_ORDER.map((d) => {
+        const h = draft[d]!;
+        const err = dayError(h);
+        const name = DAY_NAMES[d]!;
+        return (
+          <div key={d} className="rounded-xl border border-subtle p-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex min-h-12 w-28 items-center gap-2">
+                <Switch checked={h.on} onCheckedChange={(v) => set(d, { on: v }, true)} aria-label={`Work on ${name}`} />
+                <span className="text-sm font-medium">{name.slice(0, 3)}</span>
+              </label>
+              {h.on ? (
+                <div className="flex w-full min-w-0 items-center gap-1">
+                  <Input type="time" className="h-12 min-w-0 flex-1 px-2" aria-label={`${name} start`} value={h.start} aria-invalid={!!err} aria-describedby={err ? `wh-err-${d}` : undefined} onChange={(e) => set(d, { start: e.target.value })} onBlur={() => commit(draft)} />
+                  <span aria-hidden className="text-muted-foreground">–</span>
+                  <Input type="time" className="h-12 min-w-0 flex-1 px-2" aria-label={`${name} end`} value={h.end} aria-invalid={!!err} aria-describedby={err ? `wh-err-${d}` : undefined} onChange={(e) => set(d, { end: e.target.value })} onBlur={() => commit(draft)} />
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">Day off</span>
+              )}
+            </div>
+            {err && <p id={`wh-err-${d}`} role="alert" className="mt-1 text-sm text-destructive">{err}</p>}
+          </div>
+        );
+      })}
+      <Button variant="outline" className="w-full" onClick={() => { const next = copyMondayToWeekdays(draft); setDraft(next); commit(next); }}>
+        Copy Monday to weekdays
+      </Button>
+    </fieldset>
+  );
+}
+
+function KeywordPreview({ s }: { s: Settings }) {
+  const fetchEvents = useServerFn(getCalendarEvents);
+  const monday = mondayKey();
+  // Titles stay in memory only (query cache), never stored.
+  const week = useQuery({
+    queryKey: ["gcal", "week", monday, s.calendar_ids],
+    queryFn: () => {
+      const from = localDateFromKey(monday);
+      const to = new Date(from);
+      to.setDate(to.getDate() + 7);
+      return fetchEvents({ data: { timeMin: from.toISOString(), timeMax: to.toISOString() } });
+    },
+    staleTime: 5 * 60_000,
+  });
+  if (week.isLoading) return <div role="status" aria-busy="true" className="h-10 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>;
+  if (week.isError) return <p className="text-sm text-muted-foreground">Couldn't load this week's meetings.</p>;
+  if (week.data?.status !== "connected") return <p className="text-sm text-muted-foreground">Connect Google Calendar to preview.</p>;
+  const matches = week.data.events
+    .filter((e) => !e.allDay)
+    .map((e) => ({ e, m: keywordMatch(e.title, s.keywords) }))
+    .filter((x) => x.m);
+  return (
+    <section aria-label="Matches this week" className="space-y-2">
+      <p className="text-sm font-semibold" role="status">
+        Matches this week · {matches.length ? `${matches.length} ${matches.length === 1 ? "meeting matches" : "meetings match"}` : "No meetings this week match"}
+      </p>
+      {matches.length > 0 && (
+        <ul className="max-h-64 space-y-1 overflow-y-auto">
+          {matches.map(({ e, m }) => (
+            <li key={e.id} className="rounded-lg bg-secondary px-3 py-2 text-sm">
+              <span className="break-words">{m!.before}<mark className="rounded bg-gold px-0.5 text-gold-foreground">{m!.match}</mark>{m!.after}</span>
+              <span className="block text-xs text-muted-foreground tabular">
+                {new Date(e.start).toLocaleDateString("en-GB", { weekday: "short" })} {fmtTime(e.start)} · “{m!.keyword}”
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
