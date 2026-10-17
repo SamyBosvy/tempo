@@ -8,6 +8,18 @@ export function isOwnerEmail(email: string, ownerEmail: string | undefined): boo
   return normaliseEmail(email) === normaliseEmail(ownerEmail);
 }
 
+export type InviteStatus = { status: "invited" | "joined"; date: string };
+
+/** Match an allowlist entry against signed-up members (case-insensitive). */
+export function inviteStatus(
+  invite: { email: string; invited_at: string | null; created_at: string },
+  members: { email: string; created_at: string }[],
+): InviteStatus {
+  const m = members.find((x) => normaliseEmail(x.email) === normaliseEmail(invite.email));
+  if (m) return { status: "joined", date: m.created_at };
+  return { status: "invited", date: invite.invited_at ?? invite.created_at };
+}
+
 export function buildInviteLink(origin: string, email: string): string {
   return `${origin}/?setup=1&email=${encodeURIComponent(normaliseEmail(email))}`;
 }

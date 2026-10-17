@@ -27,3 +27,20 @@ describe("L5 password strength", () => {
   it("8 letters+digits is okay", () => expect(passwordStrength("abcdefg1")).toBe("okay"));
   it("12+ mixed is strong", () => expect(passwordStrength("Abcdefgh123!")).toBe("strong"));
 });
+
+import { inviteStatus } from "./access-rules";
+describe("S10 invite status", () => {
+  const members = [{ email: "Joined@Example.com", created_at: "2026-10-14T09:00:00Z" }];
+  it("joined when the email matches a member, using the member date", () => {
+    const s = inviteStatus({ email: "joined@example.com", invited_at: "2026-10-10T08:00:00Z", created_at: "2026-10-09T08:00:00Z" }, members);
+    expect(s).toEqual({ status: "joined", date: "2026-10-14T09:00:00Z" });
+  });
+  it("invited with the invited_at date when no member matches", () => {
+    const s = inviteStatus({ email: "new@example.com", invited_at: "2026-10-10T08:00:00Z", created_at: "2026-10-09T08:00:00Z" }, members);
+    expect(s).toEqual({ status: "invited", date: "2026-10-10T08:00:00Z" });
+  });
+  it("falls back to created_at when the invite email was never sent", () => {
+    const s = inviteStatus({ email: "new@example.com", invited_at: null, created_at: "2026-10-09T08:00:00Z" }, []);
+    expect(s).toEqual({ status: "invited", date: "2026-10-09T08:00:00Z" });
+  });
+});
