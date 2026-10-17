@@ -4,7 +4,7 @@ const upsert = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: () => ({ upsert }) } }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }) }));
 
-import { __resetQueueForTests, attentionRows, enqueue, flush, pendingRows, retryAttention, discardAttention } from "./offline-queue";
+import { __resetQueueForTests, attentionRows, enqueue, flush, pendingRows, retryAttention, discardAttention, setQueueUser } from "./offline-queue";
 
 const bad = (row: { id?: unknown }) => (row.id === "bad" ? { error: { code: "22P02", message: "invalid input" } } : { error: null });
 
@@ -12,6 +12,7 @@ describe("B4 offline queue", () => {
   beforeEach(() => {
     localStorage.clear();
     __resetQueueForTests();
+    setQueueUser('user-a');
     upsert.mockReset();
   });
 
@@ -24,6 +25,16 @@ describe("B4 offline queue", () => {
     const saved = upsert.mock.calls.map((c) => (c[0] as { id: string }).id);
     expect(saved).toContain("good");
     expect(pendingRows("energy_ratings").map((r) => r["id"])).toEqual(["bad"]);
+  });
+  it('never displays or replays another account’s pending notes', async () => {
+    upsert.mockResolvedValue({error:{code:'network',message:'network failed'}});
+    enqueue('energy_ratings',{id:'private-a',note:'private note'});
+    await flush();
+    expect(pendingRows('energy_ratings')[0]?.['user_id']).toBe('user-a');
+    setQueueUser('user-b');
+    expect(pendingRows('energy_ratings')).toEqual([]);
+    upsert.mockClear(); await flush(); expect(upsert).not.toHaveBeenCalled();
+    setQueueUser('user-a'); expect(pendingRows('energy_ratings')[0]?.['id']).toBe('private-a');
   });
 
   it("moves a row to needs attention after 3 failed attempts", async () => {

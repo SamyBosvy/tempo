@@ -15,7 +15,10 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { bindQueryClient, startQueueSync } from "@/lib/offline-queue";
+import { bindQueryClient, startQueueSync, setQueueUser } from "@/lib/offline-queue";
+import { setTimerUser } from '@/lib/focus-timer';
+import { setPrimeUser } from '@/lib/prime-session';
+import { clearCalendarMemory } from '@/lib/day-data';
 import { initialiseInstall } from "@/lib/install";
 import { registerServiceWorker } from "@/lib/pwa";
 import { trackQuerySync } from '@/lib/sync-status';
@@ -118,8 +121,18 @@ function RootComponent() {
     const stopTracking = trackQuerySync(queryClient);
     initialiseInstall();
     registerServiceWorker();
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    let identity: string | null | undefined;
+    const scope = (id: string | null) => {
+      if (identity === id) return;
+      identity = id;
+      queryClient.clear(); clearCalendarMemory();
+      setQueueUser(id); setTimerUser(id); setPrimeUser(id);
+    };
+    void supabase.auth.getSession().then(({ data }) => scope(data.session?.user.id ?? null));
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') { scope(session?.user.id ?? null); return; }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      scope(session?.user.id ?? null);
       if (event === "USER_UPDATED" && sessionStorage.getItem("tempo.emailChange")) {
         sessionStorage.removeItem("tempo.emailChange");
         toast.success("Email updated");

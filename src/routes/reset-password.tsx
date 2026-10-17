@@ -26,6 +26,7 @@ function ResetPassword() {
   const [state, setState] = useState<"checking" | "ready" | "invalid" | "done">("checking");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -36,7 +37,7 @@ function ResetPassword() {
     });
     const t = window.setTimeout(async () => {
       const { data: s } = await supabase.auth.getSession();
-      setState((cur) => (cur === "checking" ? (s.session && hash.get("type") === "recovery" ? "ready" : s.session ? "ready" : "invalid") : cur));
+      setState((cur) => cur === 'checking' ? (s.session && hash.get('type') === 'recovery' ? 'ready' : 'invalid') : cur);
     }, 1200);
     return () => {
       data.subscription.unsubscribe();
@@ -46,12 +47,17 @@ function ResetPassword() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setErr(null);
     if (pw.length < 8) return setErr("Password must be at least 8 characters.");
-    const { error } = await supabase.auth.updateUser({ password: pw });
-    if (error) return setErr("Something went wrong. Try again.");
-    setState("done");
-    window.setTimeout(() => navigate({ to: "/today" }), 1200);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw });
+      if (error) { setErr('Something went wrong. Try again.'); return; }
+      setState('done');
+      window.setTimeout(() => navigate({ to: '/today' }), 1200);
+    } catch { setErr('Something went wrong. Try again.'); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -78,7 +84,7 @@ function ResetPassword() {
               <Input id="pw" type="password" autoComplete="new-password" className="h-12 text-base" value={pw} onChange={(e) => setPw(e.target.value)} />
             </div>
             {err && <p role="alert" className="text-sm text-destructive">{err}</p>}
-            <Button size="lg" className="w-full" type="submit">Save password</Button>
+            <Button size="lg" className="w-full" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save password'}</Button>
           </form>
         )}
         {state === "done" && <p className="text-gold-text font-semibold">Password saved.</p>}

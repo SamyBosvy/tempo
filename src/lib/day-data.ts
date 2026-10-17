@@ -29,6 +29,7 @@ function dayRange(day: Date) {
 }
 
 const calendarMemory = new Map<string, EventsResult>();
+export function clearCalendarMemory() { calendarMemory.clear(); }
 
 export function useGoogleDay(day: Date) {
   const fetchEvents = useServerFn(getCalendarEvents);

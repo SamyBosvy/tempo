@@ -7,7 +7,7 @@ export type Saved = { table: Table; row: Row; interruptions: Row[] };
 
 // Minimal client surface so tests can pass a fake.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Client = { from: (t: string) => any };
+type Client = { from: (t: string) => any; rpc: (name: string, args: any) => any };
 
 export async function deleteWithUndo(db: Client, table: Table, id: string): Promise<{ ok: true; saved: Saved } | { ok: false }> {
   const got = await db.from(table).select("*").eq("id", id).maybeSingle();
@@ -24,6 +24,10 @@ export async function deleteWithUndo(db: Client, table: Table, id: string): Prom
 }
 
 export async function restoreDeleted(db: Client, saved: Saved): Promise<boolean> {
+  if (saved.table === 'focus_sessions') {
+    const { error } = await db.rpc('restore_history_session', { _row: saved.row, _interruptions: saved.interruptions });
+    return !error;
+  }
   const a = await db.from(saved.table).insert(saved.row);
   if (a.error && a.error.code !== "23505") return false;
   if (saved.interruptions.length) {
