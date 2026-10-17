@@ -778,7 +778,10 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
       }
       if (repeat !== "none") {
         if (!repeatDays.length) throw new Error("days");
-        const { error } = await supabase.rpc('convert_manual_block', { _manual: existing?.manualId ?? '', _series: { id: crypto.randomUUID(), kind, label: clean, start_time: start, end_time: end, days: repeatDays } });
+        const series={ id: crypto.randomUUID(), kind, label: clean, start_time: start, end_time: end, days: repeatDays };
+        const { error } = existing?.manualId
+          ? await supabase.rpc('convert_manual_block', { _manual: existing.manualId, _series: series })
+          : await supabase.from('recurring_blocks').insert(series);
         if (error) throw error;
         return;
       }
