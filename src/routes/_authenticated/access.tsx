@@ -121,6 +121,7 @@ function Access() {
     onError: () => toast.error("Couldn't revoke that member. Try again."),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ['members-all'] });
       qc.invalidateQueries({ queryKey: ["invites"] });
     },
   });
@@ -168,7 +169,7 @@ function Access() {
                     <span className="min-w-0">
                       <span className="block truncate">{r.email}</span>
                       <span className="block text-xs text-muted-foreground">
-                        {st.status === "joined" ? `Joined ${new Date(st.date).toLocaleDateString("en-GB")}` : `Invited ${new Date(st.date).toLocaleDateString("en-GB")}`}
+                        {allMembers.isError ? 'Status unavailable' : allMembers.isLoading ? 'Checking status…' : st.status === "joined" ? `Joined ${new Date(st.date).toLocaleDateString("en-GB")}` : `Invited ${new Date(st.date).toLocaleDateString("en-GB")}`}
                       </span>
                     </span>
                     <span className="flex shrink-0 gap-1">

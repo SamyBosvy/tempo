@@ -2,7 +2,8 @@
 
 export function csvCell(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  const raw = String(v);
+  const s = typeof v === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(raw) ? "'" + raw : raw;
   return /[",\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 

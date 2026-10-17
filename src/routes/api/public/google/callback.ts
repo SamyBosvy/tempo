@@ -27,6 +27,12 @@ export const Route = createFileRoute("/api/public/google/callback")({
               (url.hostname !== "localhost" && callback.origin !== url.origin)) return result(false, "expired");
           origin = callback.origin;
           returnPath = state.p;
+          const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+          const [{ data: account, error: accountError }, { data: roles, error: roleError }] = await Promise.all([
+            supabaseAdmin.auth.admin.getUserById(state.u),
+            supabaseAdmin.from('user_roles').select('role').eq('user_id', state.u),
+          ]);
+          if (accountError || !account.user || roleError || !roles?.length) return result(false, 'access');
           const code = url.searchParams.get("code");
           if (!code || url.searchParams.has("error")) return result(false, "cancelled");
           const clientId = process.env["GOOGLE_CLIENT_ID"];
@@ -57,7 +63,9 @@ export const Route = createFileRoute("/api/public/google/callback")({
           } catch {
             email = null;
           }
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          // Recheck after external consent exchange in case access was revoked meanwhile.
+          const { data: active, error: activeError } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', state.u);
+          if (activeError || !active?.length) return result(false, 'access');
           const { error } = await supabaseAdmin.from("google_tokens").upsert({
             user_id: state.u,
             refresh_token_ciphertext: encrypt(tok.refresh_token),

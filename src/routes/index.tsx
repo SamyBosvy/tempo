@@ -108,7 +108,6 @@ function AuthPage() {
     (async () => {
       // An invite email link signs the user in without a password; set-up mode finishes it properly.
       if (s.setup) {
-        await supabase.auth.signOut();
         setChecking(false);
         return;
       }
@@ -132,7 +131,8 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "setup") {
-        const r = await doSetup({ data: { email, password } });
+        const { data: invitation } = await supabase.auth.getSession();
+        const r = await doSetup({ data: { email, password, inviteToken: invitation.session?.access_token } });
         if (!r.ok) return setError(MSG[r.code]);
       }
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });

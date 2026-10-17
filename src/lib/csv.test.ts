@@ -11,6 +11,12 @@ describe("CSV escaping", () => {
     expect(csvCell(undefined)).toBe("");
   });
   it("keeps numbers as-is", () => expect(csvCell(42)).toBe("42"));
+  it('neutralises spreadsheet formulas in text, not negative numbers', () => {
+    expect(csvCell('=1+1')).toBe("'=1+1");
+    expect(csvCell('  @SUM(A1)')).toBe("'  @SUM(A1)");
+    expect(csvCell('-2')).toBe("'-2");
+    expect(csvCell(-2)).toBe('-2');
+  });
 });
 
 describe("toCsv", () => {
