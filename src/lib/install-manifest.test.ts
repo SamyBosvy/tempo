@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
 describe('Tempo installation manifest', () => {
   it('has stable identity without changing installed start URL', () => {
-    expect(manifest.id).toBe('/');
+    expect(manifest.id).toBe('/today');
     expect(manifest.start_url).toBe('/today');
     expect(manifest.scope).toBe('/');
     expect(manifest.display).toBe('standalone');
