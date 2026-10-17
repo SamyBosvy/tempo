@@ -1,3 +1,8 @@
+# Installation fix
+- [ ] Add permanent sign-in and Settings download buttons with platform fallback instructions.
+- [ ] Correct manifest identity and dedicated maskable icon; inspect published Chrome installation.
+- [ ] Run regression suite and phone checks; report publication-only limits.
+
 # Pre-publish audit
 - [x] Verify hosted signup restrictions, role gates, RPC/table permissions and cron protection.
 - [x] Sweep 42 phone screens and core saved-data flows in six size/theme combinations; fix confirmed bugs; 167 tests passed.
