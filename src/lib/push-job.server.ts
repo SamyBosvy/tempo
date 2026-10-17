@@ -7,7 +7,7 @@ type DB=SupabaseClient<Database>;
 type Event={id:string;start:string;end:string;stressful:boolean};
 async function calendarEvents(db:DB,s:Tables<'user_settings'>,now:number):Promise<Event[]>{
  const token=await getAccessToken(s.user_id);if(!token)return [];
- const {data:flags,error}=await db.from('event_flags').select('event_id,stressful').eq('user_id',s.user_id);if(error)throw error;
+ const {data:flags,error}=await db.from('event_flags').select('event_id,stressful').eq('user_id',s.user_id).gte('end_at',new Date(now-24*3600_000).toISOString()).lt('start_at',new Date(now+Math.max(s.prime_lead_min,60)*60_000).toISOString());if(error)throw error;
  const out:Event[]=[];
  for(const id of s.calendar_ids){let page:string|undefined;do{
  const q=new URLSearchParams({timeMin:new Date(now-24*3600_000).toISOString(),timeMax:new Date(now+Math.max(s.prime_lead_min,60)*60_000).toISOString(),singleEvents:'true',maxResults:'250',fields:'nextPageToken,items(id,summary,status,transparency,start(dateTime),end(dateTime))'});if(page)q.set('pageToken',page);
@@ -26,7 +26,7 @@ export async function runPushJob(db:DB){
  for(let offset=0;;offset+=20){
  const {data:users,error}=await db.from('user_settings').select('*').eq('push_enabled',true).order('user_id').range(offset,offset+19);if(error)throw error;
  for(const s of users??[]){try{
- const [{data:subs,error:e1},{data:presence,error:e2},{data:deadlines,error:e3}]=await Promise.all([db.from('push_subscriptions').select('*').eq('user_id',s.user_id),db.from('push_presence').select('alive_until').eq('user_id',s.user_id).maybeSingle(),db.from('push_focus_deadlines').select('*').eq('user_id',s.user_id)]);if(e1||e2||e3)throw new Error('Reminder data unavailable');
+ const [{data:subs,error:e1},{data:presence,error:e2},{data:deadlines,error:e3}]=await Promise.all([db.from('push_subscriptions').select('*').eq('user_id',s.user_id).order('created_at'),db.from('push_presence').select('alive_until').eq('user_id',s.user_id).maybeSingle(),db.from('push_focus_deadlines').select('*').eq('user_id',s.user_id)]);if(e1||e2||e3)throw new Error('Reminder data unavailable');
  if(!subs?.length||presenceAlive(now,presence?.alive_until??null))continue;
  // One canonical account timezone prevents per-device duplicate weekly reminders.
  const tz=subs[0]?.timezone??'UTC',local=zonedParts(now,tz);

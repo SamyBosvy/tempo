@@ -1,8 +1,9 @@
 # Safety notice fix
 # Final polish X6–X10
-- [ ] Illustrated empty states and install card/shortcuts.
-- [ ] Private push subscriptions, five-minute scheduling and shared dedupe.
-- [ ] Deferred update notice, exports/deletion, tests and phone checks.
+- [x] Illustrated empty states and install card/shortcuts.
+- [x] Private push subscriptions, five-minute scheduling and shared dedupe.
+- [x] Deferred update notice, exports/deletion, 157 tests and phone checks.
+- [ ] Confirm real installed-device shortcut launches, closed-app push/taps and waiting-version refresh — needs published app and physical devices.
 
 - [x] Keep the continue button pinned within safe phone viewport bounds.
 - [x] Dismiss immediately, retain failed acknowledgement and retry next launch.
