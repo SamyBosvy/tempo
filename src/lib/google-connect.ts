@@ -5,7 +5,7 @@ export function googleReturnPath(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "/settings";
   try {
     const url = new URL(value, "https://tempo.invalid");
-    if (url.origin !== "https://tempo.invalid" || !["/today", "/settings"].includes(url.pathname)) return "/settings";
+    if (url.origin !== "https://tempo.invalid" || !["/today", "/settings", "/settings/calendar"].includes(url.pathname)) return "/settings";
     url.searchParams.delete("google");
     url.searchParams.delete("google_error");
     return `${url.pathname}${url.search}${url.hash}`;
