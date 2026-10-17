@@ -317,14 +317,14 @@ function TodaySkeleton() {
   return (
     <div className="space-y-4" role="status" aria-busy="true">
       <span className="sr-only">Loading</span>
-      <div className="h-5 w-16 animate-pulse rounded bg-secondary" />
-      <div className="h-8 w-56 animate-pulse rounded bg-secondary" />
-      <div className="h-8 animate-pulse rounded-full bg-secondary" />
+      <div className="h-5 w-16 animate-enter rounded bg-secondary" />
+      <div className="h-8 w-56 animate-enter rounded bg-secondary" />
+      <div className="h-8 animate-enter rounded-full bg-secondary" />
       <div className="grid grid-cols-3 gap-2">
-        {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-secondary" />)}
+        {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-enter rounded-2xl bg-secondary" />)}
       </div>
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className={cn("animate-pulse rounded-2xl bg-secondary", i % 2 ? "h-14" : "h-20")} />
+        <div key={i} className={cn("animate-enter rounded-2xl bg-secondary", i % 2 ? "h-14" : "h-20")} />
       ))}
     </div>
   );
