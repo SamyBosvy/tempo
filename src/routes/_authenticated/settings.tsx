@@ -434,7 +434,7 @@ function NotificationSection({ s }: { s: Settings }) {
 }
 function AppearanceSection({s}:{s:Settings}) {
   const save=useSaveSettings();
-  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme.charAt(0).toUpperCase()+theme.slice(1)}</Button>)}</div><InstallTempo permanent /></Section>;
+  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme.charAt(0).toUpperCase()+theme.slice(1)}</Button>)}</div></Section>;
 }
 function KeywordChips({s}:{s:Settings}) {
   const save=useSaveSettings(),[input,setInput]=useState(''),[error,setError]=useState('');
