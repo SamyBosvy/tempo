@@ -1,5 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { setHapticsEnabled } from "@/lib/haptics";
+import { useDayEvents } from "@/lib/day-data";
 import { CalendarClock, ChartLine, History, Timer, CloudOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +54,27 @@ function AppShell() {
   const immersive = useImmersive();
 
   useApplyTheme(settings?.theme);
+  useEffect(() => setHapticsEnabled(settings?.vibration ?? false), [settings?.vibration]);
+
+  // X3: gold dot on Today while a prime is due (stressful meeting starting soon).
+  const { events } = useDayEvents(new Date(), settings?.keywords ?? []);
+  const primeDue =
+    settings != null &&
+    events.some((e) => e.stressful && !e.allDay && now >= new Date(e.start).getTime() - settings.prime_lead_min * 60_000 && now < new Date(e.start).getTime());
+
+  // X2: remember scroll per tab so returning lands where you left off.
+  const scrollPos = useRef(new Map<string, number>());
+  const prevPath = useRef(pathname);
+  useEffect(() => {
+    const onScroll = () => scrollPos.current.set(prevPath.current, window.scrollY);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    prevPath.current = pathname;
+    const y = scrollPos.current.get(pathname);
+    window.scrollTo(0, y ?? 0);
+  }, [pathname]);
 
   const remaining = focus ? Math.max(0, focus.targetMin * 60_000 - elapsedMs(focus, now)) : 0;
 
@@ -78,7 +101,9 @@ function AppShell() {
         </div>
       ) : null}
       <main className={cn("flex-1 px-4 pt-4", immersive ? "pb-[max(env(safe-area-inset-bottom),1rem)]" : "pb-28")}>
-        <Outlet />
+        <div key={pathname} className="animate-enter">
+          <Outlet />
+        </div>
       </main>
       {!immersive && <nav
         aria-label="Main"
@@ -87,6 +112,7 @@ function AppShell() {
         <ul className="mx-auto grid max-w-lg grid-cols-4">
           {tabs.map((t) => {
             const active = pathname.startsWith(t.to);
+            const dot = t.to === "/focus" && focus ? "bg-primary" : t.to === "/today" && primeDue ? "bg-gold" : null;
             return (
               <li key={t.to}>
                 <Link
@@ -97,7 +123,10 @@ function AppShell() {
                     active ? "text-accent-text" : "text-muted-foreground",
                   )}
                 >
-                  <t.icon className="h-6 w-6" aria-hidden />
+                  <span className={cn("relative flex h-8 w-14 items-center justify-center rounded-full", active && "bg-accent")}>
+                    <t.icon className="h-6 w-6" strokeWidth={active ? 2.5 : 2} aria-hidden />
+                    {dot && <span className={cn("absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full", dot)} aria-hidden />}
+                  </span>
                   {t.label}
                 </Link>
               </li>

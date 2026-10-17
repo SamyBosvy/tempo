@@ -271,7 +271,7 @@ function CalendarSection({ s }: { s: Settings }) {
       <KeywordChips s={s} />
       <KeywordPreview s={s} />
       {cals.isLoading ? (
-        <div role="status" aria-busy="true" className="h-12 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
+        <div role="status" aria-busy="true" className="h-12 animate-enter rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>
       ) : connected ? (
         <>
           <p className="text-sm">Connected{s.google_email ? <> as <span className="font-semibold">{s.google_email}</span></> : ""}. Read-only.</p>
@@ -507,7 +507,7 @@ function KeywordPreview({ s }: { s: Settings }) {
     },
     staleTime: 5 * 60_000,
   });
-  if (week.isLoading) return <div role="status" aria-busy="true" className="h-10 animate-pulse rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>;
+  if (week.isLoading) return <div role="status" aria-busy="true" className="h-10 animate-enter rounded-xl bg-secondary"><span className="sr-only">Loading</span></div>;
   if (week.isError) return <p className="text-sm text-muted-foreground">Couldn't load this week's meetings.</p>;
   if (week.data?.status !== "connected") return <p className="text-sm text-muted-foreground">Connect Google Calendar to preview.</p>;
   const matches = week.data.events

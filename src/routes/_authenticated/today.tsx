@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Settings as Gear, Plus, Wind, Zap, CalendarOff, MoreHorizontal, Play, Repeat } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { tapHaptic } from "@/lib/haptics";
 import { getCalendarList } from "@/lib/google.functions";
 import { workWindow } from "@/lib/work-hours";
 import { toast } from "sonner";
@@ -317,14 +318,14 @@ function TodaySkeleton() {
   return (
     <div className="space-y-4" role="status" aria-busy="true">
       <span className="sr-only">Loading</span>
-      <div className="h-5 w-16 animate-pulse rounded bg-secondary" />
-      <div className="h-8 w-56 animate-pulse rounded bg-secondary" />
-      <div className="h-8 animate-pulse rounded-full bg-secondary" />
+      <div className="h-5 w-16 animate-enter rounded bg-secondary" />
+      <div className="h-8 w-56 animate-enter rounded bg-secondary" />
+      <div className="h-8 animate-enter rounded-full bg-secondary" />
       <div className="grid grid-cols-3 gap-2">
-        {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-secondary" />)}
+        {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-enter rounded-2xl bg-secondary" />)}
       </div>
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className={cn("animate-pulse rounded-2xl bg-secondary", i % 2 ? "h-14" : "h-20")} />
+        <div key={i} className={cn("animate-enter rounded-2xl bg-secondary", i % 2 ? "h-14" : "h-20")} />
       ))}
     </div>
   );
@@ -368,6 +369,7 @@ function MorningCheck({ dayKey }: { dayKey: string }) {
         label="Morning energy"
         value={null}
         onChange={(v) => {
+          tapHaptic();
           enqueue("energy_ratings", {
             id: crypto.randomUUID(),
             kind: "morning",
@@ -493,6 +495,7 @@ function CheckIns({ due, primed, intents, dayKey }: { due: DayEvent[]; primed: S
                   label="Energy after the meeting"
                   value={null}
                   onChange={(v) => {
+                    tapHaptic();
                     enqueue("energy_ratings", afterMeetingRating({
                       id: crypto.randomUUID(), rating: v, note: note[e.id], eventId: e.id,
                       primed: primed.has(e.id), intention: intents.get(e.id) ?? null,
@@ -521,6 +524,7 @@ function Timeline({ events, slots, isToday, readOnly, now, day }: { events: DayE
 
   const toggle = useMutation({
     mutationFn: async (e: DayEvent) => {
+      tapHaptic();
       const { error } = await supabase
         .from("event_flags")
         .upsert({ event_id: e.id, stressful: !e.stressful, reason: e.stressful ? null : e.reason, start_at: e.start, end_at: e.end }, { onConflict: "user_id,event_id" });
@@ -663,6 +667,7 @@ function StressSheet({ event, dayKey, onClose }: { event: DayEvent; dayKey: stri
   const [reason, setReason] = useState<StressReason | null>(event.reason);
   const save = useMutation({
     mutationFn: async () => {
+      tapHaptic();
       const { error } = await supabase
         .from("event_flags")
         .upsert({ event_id: event.id, stressful, reason: stressful ? reason : null, start_at: event.start, end_at: event.end }, { onConflict: "user_id,event_id" });
@@ -752,6 +757,7 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
 
   const save = useMutation({
     mutationFn: async () => {
+      tapHaptic();
       if (end <= start) throw new Error("order");
       const clean = label.trim().slice(0, 40) || null;
       const oneOff = { kind, label: clean, start_at: atLocal(day, start).toISOString(), end_at: atLocal(day, end).toISOString() };

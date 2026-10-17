@@ -32,6 +32,7 @@
 - Theme resolution lives in a shared browser hook that listens to device preference changes and reads theme-colour from CSS tokens, so System stays live without persisting computed choices.
 - Sync status observes successful non-manual query cache updates and queue deliveries; the release identifier lives in a build constant, so status never claims an optimistic edit was synced.
 - Working hours resolve per weekday through src/lib/work-hours.ts (work_hours jsonb, legacy work_start/work_end as fallback); every screen asks it for the day's window, so a day off yields no focus slots without special cases.
-- Calendar colours come from calendarList at read time and are applied only to strips/segments when several calendars are included, so text contrast never depends on Google's palette.
+- Calendar colours come from calendarList at read time and are applied only to strips/segments when several calendars are included, never text.
+- Metronome pulse (`animate-metronome`) only on live elements — running focus dot, prime due now, sign-in ribbon; everything else uses the one-shot `animate-enter` (175ms fade + 4px rise).
 - Notification toggles live only in Settings → Notifications (prime reminders, focus end sound/notify, check-in, weekly review, vibration); shell notifiers (Prime/Checkin/WeeklyReview) gate on them and fire at most once per target via localStorage sentinels.
 - CSV exports (focus sessions, energy ratings) go through src/lib/csv.ts: BOM + CRLF, quoted cells, local dates; invite status is derived by matching allowed_emails against the paged member list, never stored.

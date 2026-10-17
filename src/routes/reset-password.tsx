@@ -59,7 +59,7 @@ function ResetPassword() {
       <div className="w-full max-w-sm rounded-3xl border border-subtle bg-card p-5">
         <h1 className="mb-4 text-2xl font-semibold">New password</h1>
         {state === "checking" && (
-          <div role="status" aria-busy="true" className="h-24 animate-pulse rounded-xl bg-secondary">
+          <div role="status" aria-busy="true" className="h-24 animate-enter rounded-xl bg-secondary">
             <span className="sr-only">Loading</span>
           </div>
         )}

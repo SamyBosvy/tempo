@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { tapHaptic } from "@/lib/haptics";
 import { useSettings, useSaveSettings, type Settings } from "@/lib/settings";
 import { PATTERNS, isBreathPattern, phaseAt, type BreathPattern } from "@/lib/breath";
 import { clearPrime, isStalePrime, loadPrime, primeProgress, QUICK_PRIME_MIN, savePrime, type RunningPrime } from "@/lib/prime-session";
@@ -151,6 +152,7 @@ function PrimeInner({ settings }: { settings: Settings }) {
   }, [cur.occurrence, cur.phase.kind, cur.remaining, stage]);
 
   function begin() {
+    tapHaptic();
     stopCues();
     // When called from a tap, AudioContext creation and resume happen in this user gesture.
     cues.current = new BreathCues(settings.eyes_closed, settings.vibration);
