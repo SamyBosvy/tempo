@@ -34,11 +34,11 @@ export function EnergyPicker({
 }
 
 export function Card({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-2xl border border-subtle bg-card p-4", className)} {...p} />;
+  return <div className={cn("animate-enter rounded-2xl border border-subtle bg-card p-4 shadow-card", className)} {...p} />;
 }
 
 export function SkeletonBlock({ className }: { className?: string }) {
-  return <div aria-hidden className={cn("animate-pulse rounded-2xl bg-secondary", className)} />;
+  return <div aria-hidden className={cn("animate-enter rounded-2xl bg-secondary", className)} />;
 }
 
 export function ScreenSkeleton({ rows = 5, header = true }: { rows?: number; header?: boolean }) {
@@ -55,7 +55,7 @@ export function ScreenSkeleton({ rows = 5, header = true }: { rows?: number; hea
 
 export function PageTitle({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <header className="mb-4 flex items-center justify-between gap-2">
+    <header className="mb-4 flex animate-enter items-center justify-between gap-2">
       <h1 className="text-2xl font-semibold">{children}</h1>
       {right}
     </header>
