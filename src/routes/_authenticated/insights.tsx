@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/tempo/EmptyState";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -60,7 +61,7 @@ function Evidence({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 function Empty({ children = "Nothing logged in this period." }: { children?: ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <EmptyState>{children}</EmptyState>;
 }
 function Chart({ children }: { children: React.ReactElement }) {
   return (
@@ -136,6 +137,7 @@ function Insights() {
           <Findings d={d} period={period} />
           {d.session_count < 5 && d.rating_count < 5 && (
             <Card>
+              <EmptyState>Your patterns are taking shape.</EmptyState>
               <p>
                 {d.session_count} of 5 sessions — {5 - d.session_count} more and your patterns
                 appear.
@@ -186,12 +188,12 @@ function Insights() {
               </BarChart>
             </Chart>
           </Evidence>
-          <Evidence title="Last week">
+          <div id="last-week" className="scroll-mt-4"><Evidence title="Last week">
             <p className="mb-3 text-xs text-muted-foreground">
               {dateLabel(d.last_week.start)}–{dateLabel(d.last_week.end)} · completed week
             </p>
             <WeeklyReviewContent d={d} load={lastLoad} calendarKnown={known} />
-          </Evidence>
+          </Evidence></div>
           <Evidence title="Planned vs actual">
             {d.completion.rate === null ? (
               <Empty />

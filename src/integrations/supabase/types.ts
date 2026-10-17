@@ -283,6 +283,66 @@ export type Database = {
         }
         Relationships: []
       }
+      push_focus_deadlines: {
+        Row: {
+          end_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          end_at: string
+          session_id: string
+          user_id?: string
+        }
+        Update: {
+          end_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_presence: {
+        Row: {
+          alive_until: string
+          user_id: string
+        }
+        Insert: {
+          alive_until: string
+          user_id?: string
+        }
+        Update: {
+          alive_until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          keys: Json
+          timezone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          keys: Json
+          timezone?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          keys?: Json
+          timezone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recurring_blocks: {
         Row: {
           active: boolean
@@ -345,6 +405,24 @@ export type Database = {
           },
         ]
       }
+      reminder_claims: {
+        Row: {
+          created_at: string
+          reminder_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          reminder_key: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          reminder_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -384,6 +462,7 @@ export type Database = {
           min_focus_min: number
           notifications: boolean
           prime_lead_min: number
+          push_enabled: boolean
           safety_ack_at: string | null
           theme: string
           updated_at: string
@@ -412,6 +491,7 @@ export type Database = {
           min_focus_min?: number
           notifications?: boolean
           prime_lead_min?: number
+          push_enabled?: boolean
           safety_ack_at?: string | null
           theme?: string
           updated_at?: string
@@ -440,6 +520,7 @@ export type Database = {
           min_focus_min?: number
           notifications?: boolean
           prime_lead_min?: number
+          push_enabled?: boolean
           safety_ack_at?: string | null
           theme?: string
           updated_at?: string
@@ -458,6 +539,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_reminder: { Args: { _key: string }; Returns: boolean }
       get_history_month: {
         Args: { _month: string; _tz: string }
         Returns: Json

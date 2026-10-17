@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   keywords: ["review", "interview", "1:1", "performance"],
   calendar_ids: ["primary"],
   notifications: false,
+  push_enabled: false,
   vibration: true,
   wake_lock: true,
   end_sound: true,

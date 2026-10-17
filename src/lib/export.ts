@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { csvCell, downloadCsv, toCsv } from "./csv";
 
-const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_blocks", "recurring_skips", "checkin_dismissals"] as const;
+const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_blocks", "recurring_skips", "checkin_dismissals", "push_subscriptions", "push_focus_deadlines", "push_presence", "reminder_claims"] as const;
 
 /** Page a whole table in 1,000-row chunks. */
 async function fetchAll<T>(table: (typeof TABLES)[number]): Promise<T[]> {

@@ -119,7 +119,7 @@ export const listMembers = createServerFn({ method: "POST" })
     return { members: list.map(({ total: _t, ...r }) => r), total: Number(list[0]?.total ?? 0), size };
   });
 
-const USER_TABLES = ["interruptions", "focus_sessions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_skips", "recurring_blocks", "checkin_dismissals", "user_settings"] as const;
+const USER_TABLES = ["interruptions", "focus_sessions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_skips", "recurring_blocks", "checkin_dismissals", "push_subscriptions", "push_focus_deadlines", "push_presence", "reminder_claims", "user_settings"] as const;
 
 async function wipeUser(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

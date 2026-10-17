@@ -1,5 +1,5 @@
 // Per-screen queries for one local day. Event titles live only in memory /
-// device storage; the database only stores ids, times and flags.
+// never device storage; the database only stores ids, times and flags.
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ function dayRange(day: Date) {
   return { from, to };
 }
 
-const cacheKey = (k: string) => `tempo.day.${k}`;
+const calendarMemory = new Map<string, EventsResult>();
 
 export function useGoogleDay(day: Date) {
   const fetchEvents = useServerFn(getCalendarEvents);
@@ -40,15 +40,16 @@ export function useGoogleDay(day: Date) {
       try {
         const res = await fetchEvents({ data: { timeMin: from.toISOString(), timeMax: to.toISOString() } });
         try {
-          localStorage.setItem(cacheKey(key), JSON.stringify(res));
-          localStorage.setItem("tempo.lastDay", key);
+          calendarMemory.set(key, res);
+          // Remove the legacy persisted calendar content without reading it.
+          for (const k of Object.keys(localStorage)) if (k.startsWith("tempo.day.")) localStorage.removeItem(k);
         } catch {
           /* storage full */
         }
         return res;
       } catch (e) {
-        const cached = localStorage.getItem(cacheKey(key));
-        if (cached) return { ...(JSON.parse(cached) as EventsResult), offline: true };
+        const cached = calendarMemory.get(key);
+        if (cached) return { ...cached, offline: true };
         throw e;
       }
     },

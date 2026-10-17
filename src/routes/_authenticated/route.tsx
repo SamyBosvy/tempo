@@ -1,3 +1,5 @@
+import { PushPresence } from "@/components/tempo/PushPresence";
+import { SafeUpdateNotice } from "@/components/tempo/SafeUpdateNotice";
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { setHapticsEnabled } from "@/lib/haptics";
@@ -134,6 +136,8 @@ function AppShell() {
           })}
         </ul>
       </nav>}
+      <SafeUpdateNotice />
+      {settings && <PushPresence settings={settings} />}
       {settings && <FocusEndSignal settings={settings} />}
       {settings && <SafetyModal key={settings.user_id} settings={settings} />}
       {settings && <PrimeNotifier settings={settings} />}

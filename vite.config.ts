@@ -17,12 +17,15 @@ export default defineConfig({
     plugins: [
       VitePWA({
         strategies: "generateSW",
-        registerType: "autoUpdate",
+        // Explicit prompt is essential: autoUpdate forces skipWaiting in this plugin.
+        registerType: "prompt",
         injectRegister: null,
         manifest: false,
         filename: "sw.js",
         devOptions: { enabled: false },
         workbox: {
+          skipWaiting: false,
+          clientsClaim: true,
           globPatterns: ["**/*.{js,css,png,svg,woff2}"],
           navigateFallback: null,
           importScripts: ["/sw-notify.js"],
