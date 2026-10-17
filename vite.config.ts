@@ -6,6 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
+import { precacheURLPrefixes } from "./src/lib/pwa-build";
 
 export default defineConfig({
   tanstackStart: {
@@ -27,6 +28,7 @@ export default defineConfig({
           skipWaiting: false,
           clientsClaim: true,
           globPatterns: ["**/*.{js,css,png,svg,woff2}"],
+          modifyURLPrefix: precacheURLPrefixes,
           navigateFallback: null,
           importScripts: ["/sw-notify.js"],
           runtimeCaching: [

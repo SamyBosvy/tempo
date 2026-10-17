@@ -1,7 +1,8 @@
 # Installation fix
-- [ ] Add permanent sign-in and Settings download buttons with platform fallback instructions.
-- [ ] Correct manifest identity and dedicated maskable icon; inspect published Chrome installation.
-- [ ] Run regression suite and phone checks; report publication-only limits.
+- [x] Add permanent sign-in and Settings download buttons with platform fallback instructions.
+- [x] Correct manifest identity and dedicated maskable icon; fix nonexistent client/ precache URLs preventing worker installation.
+- [x] Run regression suite and phone checks; published canonical Chrome has no installability errors but its old worker fails installation.
+- [ ] Verify corrected worker controlling after Update; dusk-to-dawn-tempo address currently returns project not found. Requires updated publication.
 
 # Pre-publish audit
 - [x] Verify hosted signup restrictions, role gates, RPC/table permissions and cron protection.
