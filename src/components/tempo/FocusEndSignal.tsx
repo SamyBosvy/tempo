@@ -1,11 +1,10 @@
-import { claimNotification } from "@/lib/push";
+import { deliverReminder } from "@/lib/push";
 import { reminderKey } from "@/lib/push-rules";
 // F5 + F6: keeps the screen awake during focus and fires the end signal
 // (chime, vibration, notification) once when time is up, while Tempo is alive.
 import { useEffect } from "react";
 import { useFocusState, focusTimer, elapsedMs } from "@/lib/focus-timer";
 import { playChime, useWakeLock, vibrateEnd, wakeLockWanted } from "@/lib/focus-extras";
-import { showAppNotification } from "@/lib/notify";
 import type { Settings } from "@/lib/settings";
 
 export function FocusEndSignal({ settings }: { settings: Settings }) {
@@ -26,8 +25,9 @@ export function FocusEndSignal({ settings }: { settings: Settings }) {
       if (settings.vibration) vibrateEnd();
       if (settings.end_notify) void (async () => {
         const end = new Date(cur.resumedAt + cur.targetMin * 60_000 - cur.accumulatedMs).toISOString();
-        if (settings.push_enabled && !await claimNotification(reminderKey('focus',cur.id,end))) return;
-        await showAppNotification(`Focus done · ${cur.targetMin} min`, { body: "Time's up. Wrap up when you're ready.", tag: `focus-${cur.id}`, url: "/focus" });
+        await deliverReminder(settings.user_id, reminderKey('focus',cur.id,end), settings.push_enabled,
+          `tempo.focus.notified.${settings.user_id}`, `Focus done · ${cur.targetMin} min`,
+          { body: "Time's up. Wrap up when you're ready.", tag: `focus-${cur.id}`, url: "/focus" });
       })();
     };
     if (remaining <= 0) {
