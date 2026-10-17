@@ -1,3 +1,8 @@
+# Settings redesign SET1–SET6
+- [ ] Replace stacked Settings with grouped menu, live summaries, slim download row and attention banner.
+- [ ] Move every control into nested pages; preserve inline appearance and OAuth returns.
+- [ ] Consolidate exports, move sync to About; test summaries, routes and signed-in phone flows; run full suite.
+
 # Installation fix
 - [x] Add permanent sign-in and Settings download buttons with platform fallback instructions.
 - [x] Correct manifest identity and dedicated maskable icon; fix nonexistent client/ precache URLs preventing worker installation.
