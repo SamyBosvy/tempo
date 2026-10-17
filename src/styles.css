@@ -115,6 +115,8 @@
   --sidebar-border: oklch(0.575 0.038 257.9);
   --sidebar-ring: oklch(0.742 0.121 185.4);
   --shadow-glow: 0 0 0 1px oklch(0.742 0.121 185.4 / 30%), 0 12px 40px -12px oklch(0.742 0.121 185.4 / 45%);
+  /* X4 card depth: faint inner top highlight in dark mode */
+  --shadow-card: inset 0 1px 0 oklch(0.953 0.013 86.8 / 6%);
   --gradient-dusk: radial-gradient(120% 80% at 50% 0%, oklch(0.31 0.06 250) 0%, oklch(0.221 0.039 258.3) 60%);
   color-scheme: dark;
 }
