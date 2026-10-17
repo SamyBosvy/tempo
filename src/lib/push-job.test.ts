@@ -12,7 +12,7 @@ it('never processes notifications for a revoked roleless account', async () => {
       range: async () => ({data:[{user_id:'revoked'}],error:null}),
       maybeSingle: async () => ({data:null,error:null})}; return query;
   }};
-  expect(await runPushJob(db as Parameters<typeof runPushJob>[0])).toEqual({sent:0});
+  expect(await runPushJob(db as unknown as Parameters<typeof runPushJob>[0])).toEqual({sent:0});
   expect(visited).toEqual(['user_settings','user_roles']);
   expect(deliver).not.toHaveBeenCalled(); vi.unstubAllEnvs();
 });
