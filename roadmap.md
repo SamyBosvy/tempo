@@ -1,3 +1,9 @@
+# Installation fix
+- [x] Add permanent sign-in and Settings download buttons with platform fallback instructions.
+- [x] Correct manifest identity and dedicated maskable icon; fix nonexistent client/ precache URLs preventing worker installation.
+- [x] Run regression suite and phone checks; published canonical Chrome has no installability errors but its old worker fails installation.
+- [ ] Verify corrected worker controlling after Update; dusk-to-dawn-tempo address currently returns project not found. Requires updated publication.
+
 # Pre-publish audit
 - [x] Verify hosted signup restrictions, role gates, RPC/table permissions and cron protection.
 - [x] Sweep 42 phone screens and core saved-data flows in six size/theme combinations; fix confirmed bugs; 167 tests passed.

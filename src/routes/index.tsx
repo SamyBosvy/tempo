@@ -8,6 +8,7 @@ import { finishGoogleSignIn, setupAccount } from "@/lib/access.functions";
 import { lovable } from "@/integrations/lovable";
 import { passwordStrength, safeNextPath } from "@/lib/access-rules";
 import { DayRibbon } from "@/components/tempo/DayRibbon";
+import { InstallTempo } from "@/components/tempo/InstallTempo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,6 +277,7 @@ function AuthPage() {
           Continue with Google
         </Button>
       </div>
+      <div className="mt-5 w-full max-w-sm"><InstallTempo permanent /></div>
     </div>
   );
 }

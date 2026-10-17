@@ -70,6 +70,7 @@ function SettingsPage() {
         <Button asChild variant="ghost" size="icon" aria-label="Back to Today"><Link to="/today"><ChevronLeft /></Link></Button>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
+      <InstallTempo permanent />
       <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-subtle bg-background px-4 py-2">
         {['Your day','Focus','Breathing','Google Calendar','Notifications','Appearance','Account','Privacy',...(role==='owner'?['Access']:[]),'About Tempo'].map(title => <Button key={title} variant="secondary" size="sm" className="h-10 shrink-0 px-3 text-xs" onClick={()=>document.getElementById(`settings-${title.toLowerCase().replaceAll(' ','-')}`)?.scrollIntoView({block:'start'})}>{title}</Button>)}
       </nav>
@@ -433,7 +434,7 @@ function NotificationSection({ s }: { s: Settings }) {
 }
 function AppearanceSection({s}:{s:Settings}) {
   const save=useSaveSettings();
-  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme.charAt(0).toUpperCase()+theme.slice(1)}</Button>)}</div><InstallTempo permanent /></Section>;
+  return <Section title="Appearance"><div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">{(['system','dark','light'] as const).map(theme=><Button key={theme} role="radio" aria-checked={s.theme===theme} variant={s.theme===theme?'default':'outline'} onClick={()=>save.mutate({theme})}>{theme.charAt(0).toUpperCase()+theme.slice(1)}</Button>)}</div></Section>;
 }
 function KeywordChips({s}:{s:Settings}) {
   const save=useSaveSettings(),[input,setInput]=useState(''),[error,setError]=useState('');
