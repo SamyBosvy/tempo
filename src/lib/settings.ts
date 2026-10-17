@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { defaultWorkHours } from "./work-hours";
+import { rollbackPatch } from './settings-rules';
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Settings = Tables<"user_settings">;
@@ -72,8 +73,8 @@ export function useSaveSettings() {
       if (prev) qc.setQueryData(settingsQuery.queryKey, { ...prev, ...patch } as Settings);
       return { prev };
     },
-    onError: (_e, _p, ctx) => {
-      if (ctx?.prev) qc.setQueryData(settingsQuery.queryKey, ctx.prev);
+    onError: (_e, patch, ctx) => {
+      if (ctx?.prev) qc.setQueryData(settingsQuery.queryKey, (current:Settings|undefined)=>current?rollbackPatch(current,ctx.prev,patch):ctx.prev);
       toast.error("Couldn't save that setting. Try again.");
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["settings"] }),
