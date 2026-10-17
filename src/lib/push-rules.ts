@@ -1,5 +1,5 @@
 export type ReminderKind = 'prime' | 'focus' | 'checkin' | 'weekly';
-export function reminderKey(kind: ReminderKind, id: string, at: string) { return `${kind}:${id}:${at}`; }
+export function reminderKey(kind: ReminderKind, id: string, at: string) { return `${kind}:${id}:${at && Number.isFinite(Date.parse(at)) ? new Date(at).toISOString() : at}`; }
 export function primeDue(now: number, start: number, lead: number) { return now >= start - lead * 60_000 && now < start; }
 export function focusDue(now: number, end: number) { return now >= end && now < end + 10 * 60_000; }
 export function checkinDue(now: number, end: number, rated: boolean, dismissed: boolean) { return !rated && !dismissed && now >= end + 2 * 60_000 && now < end + 24 * 3600_000; }
