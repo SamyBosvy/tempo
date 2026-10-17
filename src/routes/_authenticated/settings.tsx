@@ -70,6 +70,7 @@ function SettingsPage() {
         <Button asChild variant="ghost" size="icon" aria-label="Back to Today"><Link to="/today"><ChevronLeft /></Link></Button>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
+      <InstallTempo permanent />
       <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-subtle bg-background px-4 py-2">
         {['Your day','Focus','Breathing','Google Calendar','Notifications','Appearance','Account','Privacy',...(role==='owner'?['Access']:[]),'About Tempo'].map(title => <Button key={title} variant="secondary" size="sm" className="h-10 shrink-0 px-3 text-xs" onClick={()=>document.getElementById(`settings-${title.toLowerCase().replaceAll(' ','-')}`)?.scrollIntoView({block:'start'})}>{title}</Button>)}
       </nav>
