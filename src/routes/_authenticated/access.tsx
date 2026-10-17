@@ -1,11 +1,12 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronLeft, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { inviteEmail, listMembers, removeInvite, revokeMember } from "@/lib/access.functions";
+import { inviteStatus } from "@/lib/access-rules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,43 @@ function Access() {
     },
   });
   const mem = useQuery({ queryKey: ["members", mp], queryFn: () => members({ data: { page: mp } }) });
+  // S10: full member list so invites can show Invited/Joined status.
+  const allMembers = useQuery({
+    queryKey: ["members-all"],
+    queryFn: async () => {
+      const out: Awaited<ReturnType<typeof members>>["members"] = [];
+      for (let page = 0; ; page++) {
+        const r = await members({ data: { page } });
+        out.push(...r.members);
+        if (out.length >= r.total || r.members.length === 0) return out;
+      }
+    },
+  });
+  const [cooldown, setCooldown] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setCooldown((c) => {
+        const next: Record<string, number> = {};
+        let changed = false;
+        for (const [k, v] of Object.entries(c)) {
+          if (v > 1) { next[k] = v - 1; changed = true; }
+          else if (v === 1) changed = true;
+          else next[k] = v;
+        }
+        return changed ? next : c;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const resend = useMutation({
+    mutationFn: (e: string) => invite({ data: { email: e, origin: window.location.origin } }),
+    onSuccess: (r, e) => {
+      setCooldown((c) => ({ ...c, [e]: 60 }));
+      if (r.sent) toast.success("Invite re-sent.");
+      else setManual(r.link);
+    },
+    onError: () => toast.error("Couldn't resend the invite. Try again."),
+  });
 
   const add = useMutation({
     mutationFn: () => invite({ data: { email: email.trim(), origin: window.location.origin } }),
@@ -121,12 +159,28 @@ function Access() {
           <>
             {invites.data!.rows.length === 0 && <p className="text-muted-foreground">No invites yet.</p>}
             <ul className="space-y-2">
-              {invites.data!.rows.map((r) => (
-                <li key={r.email} className="flex items-center justify-between gap-2 rounded-2xl border border-subtle bg-card p-3">
-                  <span className="min-w-0 truncate">{r.email}</span>
-                  <Button variant="ghost" size="sm" disabled={del.isPending} onClick={() => del.mutate(r.email)}>Remove</Button>
-                </li>
-              ))}
+              {invites.data!.rows.map((r) => {
+                const st = inviteStatus(r, allMembers.data ?? []);
+                const left = cooldown[r.email] ?? 0;
+                return (
+                  <li key={r.email} className="flex items-center justify-between gap-2 rounded-2xl border border-subtle bg-card p-3">
+                    <span className="min-w-0">
+                      <span className="block truncate">{r.email}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {st.status === "joined" ? `Joined ${st.date.toLocaleDateString("en-GB")}` : `Invited ${st.date.toLocaleDateString("en-GB")}`}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 gap-1">
+                      {st.status === "invited" && (
+                        <Button variant="ghost" size="sm" disabled={left > 0 || resend.isPending} onClick={() => resend.mutate(r.email)}>
+                          {left > 0 ? `Resend (${left}s)` : "Resend"}
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" disabled={del.isPending} onClick={() => del.mutate(r.email)}>Remove</Button>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
             <Pager page={ip} total={invites.data!.total} size={PAGE} onPage={setIp} />
           </>
