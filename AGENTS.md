@@ -39,3 +39,5 @@
 - Sync status observes successful non-manual query cache updates and queue deliveries; the release identifier lives in a build constant, so status never claims an optimistic edit was synced.
 - Working hours resolve per weekday through src/lib/work-hours.ts (work_hours jsonb, legacy work_start/work_end as fallback); every screen asks it for the day's window, so a day off yields no focus slots without special cases.
 - Calendar colours come from calendarList at read time and are applied only to strips/segments when several calendars are included, so text contrast never depends on Google's palette.
+- Notification toggles live only in Settings → Notifications (prime reminders, focus end sound/notify, check-in, weekly review, vibration); shell notifiers (Prime/Checkin/WeeklyReview) gate on them and fire at most once per target via localStorage sentinels.
+- CSV exports (focus sessions, energy ratings) go through src/lib/csv.ts: BOM + CRLF, quoted cells, local dates; invite status is derived by matching allowed_emails against the paged member list, never stored.
