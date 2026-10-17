@@ -16,8 +16,8 @@ export function inviteStatus(
   members: { email: string; created_at: string }[],
 ): InviteStatus {
   const m = members.find((x) => normaliseEmail(x.email) === normaliseEmail(invite.email));
-  if (m) return { status: "joined", date: m.created_at };
-  return { status: "invited", date: invite.invited_at ?? invite.created_at };
+  if (m) return { status: "joined", date: new Date(m.created_at) };
+  return { status: "invited", date: new Date(invite.invited_at ?? invite.created_at) };
 }
 
 export function buildInviteLink(origin: string, email: string): string {
