@@ -17,7 +17,7 @@
 - Logs use the per-user offline queue with client-generated ids; timers/cache switch with identity to prevent cross-account disclosure.
 - Event titles/descriptions/attendees are never stored in the database; only Google event id, times and flags — data minimisation.
 - Google refresh tokens live encrypted (AES-GCM, TOKEN_ENCRYPTION_KEY) in `google_tokens`, service-role only; all calendar calls go through server functions.
-- Public signup stays disabled; setupAccount requires verified inbox ownership, Google admission checks the allowlist, and OWNER_EMAIL alone grants owner. Ordinary functions/RLS require active membership; revoke roles before cleanup.
+- Public signup stays disabled; setup requires inbox ownership and Google checks invitations. OWNER_EMAIL alone grants owner. RLS/functions/push require membership; invitation locks prevent admission racing revoke. Child rows require owned parents.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Register service workers only via src/lib/pwa.ts, never in dev/preview; prompt updates defer during focus/prime.
 - Every blocking modal or gate screen must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned on every screen size, and must never trap the user if a save fails.

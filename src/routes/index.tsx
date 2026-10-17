@@ -89,10 +89,12 @@ function AuthPage() {
   }
 
   async function google() {
+    if (busy) return;
     setError(null);
     setInfo(null);
     setBusy(true);
     if (s.next) sessionStorage.setItem(NEXT_KEY, safeNextPath(s.next));
+    try {
     const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (res.redirected) return;
     if (res.error) {
@@ -102,6 +104,7 @@ function AuthPage() {
     }
     if (await admitGoogle()) goNext();
     setBusy(false);
+    } catch { setBusy(false); setError(MSG.error); }
   }
 
   useEffect(() => {
@@ -146,17 +149,20 @@ function AuthPage() {
   }
 
   async function forgot() {
+    if (sending || cooldown > 0) return;
     setError(null);
     setInfo(null);
     if (!email.trim()) return setError("Enter your email first.");
     setSending(true);
+    try {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    setSending(false);
     if (error && !/rate|seconds/i.test(error.message)) return setError(MSG.error);
     setInfo("If that email has an account, a reset link is on its way.");
     setCooldown(60);
+    } catch { setError(MSG.error); }
+    finally { setSending(false); }
   }
 
   const strength = passwordStrength(password);
