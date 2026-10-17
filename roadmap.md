@@ -1,3 +1,8 @@
+# Pre-publish audit
+- [ ] Verify hosted signup restrictions, role gates, RPC/table permissions and cron protection.
+- [ ] Sweep signed-in phone flows, fix confirmed bugs and run all tests.
+- [ ] Report findings and publication/device-only limitations.
+
 # Safety notice fix
 # Final polish X6–X10
 - [x] Illustrated empty states and install card/shortcuts.
