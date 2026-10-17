@@ -495,6 +495,7 @@ function CheckIns({ due, primed, intents, dayKey }: { due: DayEvent[]; primed: S
                   label="Energy after the meeting"
                   value={null}
                   onChange={(v) => {
+                    tapHaptic();
                     enqueue("energy_ratings", afterMeetingRating({
                       id: crypto.randomUUID(), rating: v, note: note[e.id], eventId: e.id,
                       primed: primed.has(e.id), intention: intents.get(e.id) ?? null,
@@ -666,6 +667,7 @@ function StressSheet({ event, dayKey, onClose }: { event: DayEvent; dayKey: stri
   const [reason, setReason] = useState<StressReason | null>(event.reason);
   const save = useMutation({
     mutationFn: async () => {
+      tapHaptic();
       const { error } = await supabase
         .from("event_flags")
         .upsert({ event_id: event.id, stressful, reason: stressful ? reason : null, start_at: event.start, end_at: event.end }, { onConflict: "user_id,event_id" });
@@ -755,6 +757,7 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
 
   const save = useMutation({
     mutationFn: async () => {
+      tapHaptic();
       if (end <= start) throw new Error("order");
       const clean = label.trim().slice(0, 40) || null;
       const oneOff = { kind, label: clean, start_at: atLocal(day, start).toISOString(), end_at: atLocal(day, end).toISOString() };
