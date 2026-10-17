@@ -1,4 +1,9 @@
 # Safety notice fix
+# Final polish X6–X10
+- [ ] Illustrated empty states and install card/shortcuts.
+- [ ] Private push subscriptions, five-minute scheduling and shared dedupe.
+- [ ] Deferred update notice, exports/deletion, tests and phone checks.
+
 - [x] Keep the continue button pinned within safe phone viewport bounds.
 - [x] Dismiss immediately, retain failed acknowledgement and retry next launch.
 - [x] Add regression tests and the blocking-modal engineering rule.
