@@ -167,7 +167,7 @@ function Access() {
                     <span className="min-w-0">
                       <span className="block truncate">{r.email}</span>
                       <span className="block text-xs text-muted-foreground">
-                        {st.status === "joined" ? `Joined ${st.date.toLocaleDateString("en-GB")}` : `Invited ${st.date.toLocaleDateString("en-GB")}`}
+                        {st.status === "joined" ? `Joined ${new Date(st.date).toLocaleDateString("en-GB")}` : `Invited ${new Date(st.date).toLocaleDateString("en-GB")}`}
                       </span>
                     </span>
                     <span className="flex shrink-0 gap-1">
