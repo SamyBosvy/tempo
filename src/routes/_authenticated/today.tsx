@@ -369,6 +369,7 @@ function MorningCheck({ dayKey }: { dayKey: string }) {
         label="Morning energy"
         value={null}
         onChange={(v) => {
+          tapHaptic();
           enqueue("energy_ratings", {
             id: crypto.randomUUID(),
             kind: "morning",
