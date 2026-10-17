@@ -20,7 +20,7 @@
 - Public signup stays disabled; setup requires inbox ownership and Google checks invitations. OWNER_EMAIL alone grants owner. RLS/functions/push require membership; invitation locks prevent admission racing revoke. Child rows require owned parents.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Register service workers only via src/lib/pwa.ts, never in dev/preview; prompt updates defer during focus/prime.
-- Installation controls share InstallTempo and install-rules: permanent entry points ignore prompt availability and dismissal, falling back to platform instructions.
+- InstallTempo shares platform fallback instructions; permanent buttons ignore prompt availability and dismissal.
 - Every blocking modal or gate screen must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned on every screen size, and must never trap the user if a save fails.
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth uses direct navigation, a validated Origin, signed restricted return path and sessionStorage; consume results once in the shell and refresh Calendar queries.
