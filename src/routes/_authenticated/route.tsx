@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SAFETY_TEXT } from "@/components/tempo/bits";
 import { PrimeNotifier } from "@/components/tempo/PrimeNotifier";
+import { CheckinNotifier } from "@/components/tempo/CheckinNotifier";
+import { WeeklyReviewNotifier } from "@/components/tempo/WeeklyReviewNotifier";
 import { FocusEndSignal } from "@/components/tempo/FocusEndSignal";
 import { useImmersive } from "@/lib/immersive";
 import { GoogleConnectResult } from "@/components/tempo/GoogleConnectResult";
@@ -106,6 +108,8 @@ function AppShell() {
       {settings && <FocusEndSignal settings={settings} />}
       {settings && <SafetyModal key={settings.user_id} settings={settings} />}
       {settings && <PrimeNotifier settings={settings} />}
+      {settings && <CheckinNotifier settings={settings} />}
+      {settings && <WeeklyReviewNotifier settings={settings} />}
     </div>
   );
 }

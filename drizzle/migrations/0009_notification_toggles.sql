@@ -1,0 +1,1 @@
+ALTER TABLE public.user_settings ADD COLUMN checkin_notify boolean NOT NULL DEFAULT true; ALTER TABLE public.user_settings ADD COLUMN weekly_review_notify boolean NOT NULL DEFAULT true;

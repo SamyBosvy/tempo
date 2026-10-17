@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   wake_lock: true,
   end_sound: true,
   end_notify: true,
+  checkin_notify: true,
+  weekly_review_notify: true,
   custom_interruption: null,
   theme: "system",
   safety_ack_at: null,

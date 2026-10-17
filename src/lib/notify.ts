@@ -3,6 +3,15 @@
 // back to the constructor where the browser allows it, and never throw.
 export type NotifyOptions = { body: string; tag: string; url: string };
 
+export type NotifyPermission = NotificationPermission | "unsupported";
+
+export function permissionLabel(p: NotifyPermission): string {
+  if (p === "granted") return "Allowed";
+  if (p === "denied") return "Blocked";
+  if (p === "default") return "Not asked";
+  return "Not supported";
+}
+
 export async function showAppNotification(title: string, o: NotifyOptions): Promise<boolean> {
   if (typeof window === "undefined" || typeof Notification === "undefined") return false;
   if (Notification.permission !== "granted") return false;
