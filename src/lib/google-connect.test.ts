@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { googleCallbackUri, googleResultUrl, googleReturnPath, navigateToGoogle } from "./google-connect";
 
 describe("Calendar OAuth navigation", () => {
+  it('preserves the Calendar settings return path without allowing arbitrary children', () => {
+    expect(googleReturnPath('/settings/calendar?google=failed#connection')).toBe('/settings/calendar#connection');
+    expect(googleReturnPath('/settings/unknown')).toBe('/settings');
+    expect(googleResultUrl('https://tempo.example.com', '/settings/calendar', true)).toBe('https://tempo.example.com/settings/calendar?google=connected');
+    expect(googleResultUrl('https://tempo.example.com', '/settings/calendar', false, 'scope')).toBe('https://tempo.example.com/settings/calendar?google=failed&google_error=scope');
+  });
   it("redirects in the same tab without opening a popup", () => {
     const assign = vi.fn();
     const open = vi.fn();

@@ -8,6 +8,18 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); window.history.replaceState({}, "", "/"); });
 
 describe("Calendar connection result", () => {
+  it('refreshes and consumes a nested Calendar settings result without navigating away', async () => {
+    sessionStorage.setItem('tempo.google.returnPath', '/settings/calendar');
+    window.history.replaceState({}, '', '/settings/calendar?google=connected');
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    await act(async () => { render(<QueryClientProvider client={qc}><GoogleConnectResult /></QueryClientProvider>); });
+    expect(window.location.pathname).toBe('/settings/calendar');
+    expect(window.location.search).toBe('');
+    expect(sessionStorage.getItem('tempo.google.returnPath')).toBeNull();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['calendars'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['gcal'] });
+  });
   it("refreshes settings and both calendar queries on successful return, only once", async () => {
     window.history.replaceState({}, "", "/today?google=connected");
     const qc = new QueryClient();
