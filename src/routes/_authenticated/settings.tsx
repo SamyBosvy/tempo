@@ -232,7 +232,7 @@ function FocusSection({ s }: { s: Settings }) {
         <Input id="custom-int" maxLength={30} className="h-12" placeholder="e.g. Kids" value={custom} onChange={(e) => setCustom(e.target.value)}
           onBlur={() => {
             const v = custom.trim().slice(0, 30) || null;
-            if (v !== (s.custom_interruption ?? null)) save.mutate({ custom_interruption: v });
+            if (v !== (s.custom_interruption ?? null)) save.mutate({ custom_interruption: v }, { onError: () => setCustom(s.custom_interruption ?? '') });
           }} />
         <p className="text-xs text-muted-foreground">Shown as an extra choice in "What happened?". Up to 30 characters.</p>
       </div>

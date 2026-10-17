@@ -12,6 +12,9 @@ import {
   type InsightData,
 } from "@/lib/insights-rules";
 import { fmtDuration } from "@/lib/timeline";
+import { useSettings } from '@/lib/settings';
+import { claimNotification } from '@/lib/push';
+import { reminderKey } from '@/lib/push-rules';
 export function WeeklyReviewContent({
   d,
   load,
@@ -65,11 +68,12 @@ export function WeeklyReviewContent({
   );
 }
 export function MondayReview() {
+  const { data: settings } = useSettings();
   const q = useInsights("30"),
     cal = useInsightCalendar(q.data);
   const week = mondayKey();
   const [dismissed, setDismissed] = useState(true);
-  const key = `tempo.weekReview.${week}`;
+  const key = `tempo.weekReview.${settings?.user_id}.${week}`;
   useEffect(() => {
     try {
       setDismissed(localStorage.getItem(key) === "1");
@@ -91,6 +95,7 @@ export function MondayReview() {
             setDismissed(true);
             try {
               localStorage.setItem(key, "1");
+              if (settings?.push_enabled) void claimNotification(reminderKey('weekly',week,''));
             } catch {
               /* session dismissal remains */
             }

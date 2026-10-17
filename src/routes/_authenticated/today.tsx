@@ -769,21 +769,20 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
           const { error } = await supabase.from("recurring_blocks").update({ kind, label: clean, start_time: start, end_time: end }).eq("id", existing.recurringId!);
           if (error) throw error;
         } else {
-          const { error: e1 } = await supabase.from("recurring_skips").upsert({ block_id: existing.recurringId!, local_date: dayKey }, { onConflict: "user_id,block_id,local_date", ignoreDuplicates: true });
-          if (e1) throw e1;
-          const { error: e2 } = await supabase.from("manual_blocks").insert(oneOff);
-          if (e2) throw e2;
+          const blockId = existing.recurringId;
+          if (!blockId) throw new Error('Block unavailable');
+          const { error } = await supabase.rpc('replace_block_occurrence', { _block: blockId, _date: dayKey, _replacement: { ...oneOff, id: crypto.randomUUID() } });
+          if (error) throw error;
         }
         return;
       }
       if (repeat !== "none") {
         if (!repeatDays.length) throw new Error("days");
-        const { error } = await supabase.from("recurring_blocks").insert({ kind, label: clean, start_time: start, end_time: end, days: repeatDays });
+        const series={ id: crypto.randomUUID(), kind, label: clean, start_time: start, end_time: end, days: repeatDays };
+        const { error } = existing?.manualId
+          ? await supabase.rpc('convert_manual_block', { _manual: existing.manualId, _series: series })
+          : await supabase.from('recurring_blocks').insert(series);
         if (error) throw error;
-        if (existing?.manualId) {
-          const { error: d } = await supabase.from("manual_blocks").delete().eq("id", existing.manualId);
-          if (d) throw d;
-        }
         return;
       }
       if (existing?.manualId) {
@@ -828,7 +827,7 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
         </DialogHeader>
         {isRecurring && (
           <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Apply to">
-            <Button role="radio" aria-checked={scope === "day"} variant={scope === "day" ? "default" : "outline"} onClick={() => setScope("day")}>This day only</Button>
+            <Button className="h-auto min-h-12 whitespace-normal px-2" role="radio" aria-checked={scope === "day"} variant={scope === "day" ? "default" : "outline"} onClick={() => setScope("day")}>This day only</Button>
             <Button role="radio" aria-checked={scope === "all"} variant={scope === "all" ? "default" : "outline"} onClick={() => setScope("all")}>All days</Button>
           </div>
         )}
@@ -846,11 +845,11 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="bs">Start</Label>
-            <Input id="bs" type="time" className="h-12" value={start} onChange={(e) => setStart(e.target.value)} />
+            <Input id="bs" type="time" className="h-12 min-w-0 px-2" value={start} onChange={(e) => setStart(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="be">End</Label>
-            <Input id="be" type="time" className="h-12" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <Input id="be" type="time" className="h-12 min-w-0 px-2" value={end} onChange={(e) => setEnd(e.target.value)} />
           </div>
         </div>
         {!isRecurring && (
@@ -858,7 +857,7 @@ function BlockSheet({ day, existing, onClose }: { day: Date; existing: DayEvent 
             <p className="text-sm font-semibold" id="rep-label">Repeat</p>
             <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="rep-label">
               {([["none", "None"], ["weekdays", "Weekdays"], ["daily", "Every day"], ["custom", "Custom days"]] as const).map(([m, l]) => (
-                <Button key={m} size="sm" role="radio" aria-checked={repeat === m} variant={repeat === m ? "default" : "outline"} onClick={() => setRepeat(m)}>
+                <Button key={m} className="h-auto min-h-12 whitespace-normal px-2" size="sm" role="radio" aria-checked={repeat === m} variant={repeat === m ? "default" : "outline"} onClick={() => setRepeat(m)}>
                   {l}
                 </Button>
               ))}

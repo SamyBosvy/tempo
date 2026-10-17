@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireMember } from './member-middleware';
 import { revokeAndDelete } from "./google.server";
 import { isOwnerEmail, normaliseEmail, buildInviteLink } from "./access-rules";
 
@@ -13,11 +14,15 @@ export type SetupResult = { ok: true } | { ok: false; code: "not_invited" | "exi
  * Open sign-up is disabled in auth settings, so this is the only way in.
  */
 export const setupAccount = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ email: emailSchema, password: z.string().max(200) }).parse(d))
+  .inputValidator((d) => z.object({ email: emailSchema, password: z.string().max(200), inviteToken: z.string().max(8192).optional() }).parse(d))
   .handler(async ({ data }): Promise<SetupResult> => {
     if (data.password.length < 8) return { ok: false, code: "weak" };
     const email = normaliseEmail(data.email);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Knowing an invited email is not proof that the caller owns its inbox.
+    if (!data.inviteToken) return { ok: false, code: 'not_invited' };
+    const { data: verified, error: verifyError } = await supabaseAdmin.auth.getUser(data.inviteToken);
+    if (verifyError || !verified.user?.email || normaliseEmail(verified.user.email) !== email || !verified.user.email_confirmed_at) return { ok: false, code: 'not_invited' };
     const owner = isOwnerEmail(email, process.env["OWNER_EMAIL"]);
     if (!owner) {
       const { data: allowed, error } = await supabaseAdmin
@@ -70,7 +75,7 @@ async function assertOwner(ctx: { supabase: any; userId: string }) {
 }
 
 export const inviteEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((d) => z.object({ email: emailSchema, origin: z.string().url() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context);
@@ -84,12 +89,13 @@ export const inviteEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: sendErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { redirectTo: link });
     if (sendErr) return { saved: true, sent: false, link };
-    await supabaseAdmin.from("allowed_emails").update({ invited_at: new Date().toISOString() }).eq("email", email);
+    const { error: stampError } = await supabaseAdmin.from("allowed_emails").update({ invited_at: new Date().toISOString() }).eq("email", email);
+    if (stampError) throw new Error("Couldn't update invite status");
     return { saved: true, sent: true, link };
   });
 
 export const removeInvite = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((d) => z.object({ email: emailSchema }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context);
@@ -98,16 +104,18 @@ export const removeInvite = createServerFn({ method: "POST" })
     if (error) throw new Error("Couldn't remove the invite");
     // Clean up an unused invite placeholder account (no role = never set up).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: id } = await supabaseAdmin.rpc("get_user_id_by_email", { _email: email });
+    const { data: id, error: lookupError } = await supabaseAdmin.rpc("get_user_id_by_email", { _email: email });
+    if (lookupError) throw new Error("Couldn't check the invite account");
     if (id) {
-      const { data: roles } = await supabaseAdmin.from("user_roles").select("id").eq("user_id", id as string);
-      if (!roles?.length) await supabaseAdmin.auth.admin.deleteUser(id as string);
+      const { data: roles, error: roleError } = await supabaseAdmin.from("user_roles").select("id").eq("user_id", id as string);
+      if (roleError) throw new Error("Couldn't check permissions");
+      if (!roles?.length) { const { error } = await supabaseAdmin.auth.admin.deleteUser(id as string); if (error) throw error; }
     }
     return { ok: true };
   });
 
 export const listMembers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((d) => z.object({ page: z.number().int().min(0).max(10000) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context);
@@ -123,6 +131,9 @@ const USER_TABLES = ["interruptions", "focus_sessions", "energy_ratings", "prime
 
 async function wipeUser(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // Revoke database access before cleanup; retained JWTs must not recreate rows.
+  const { error: roleError } = await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+  if (roleError) throw new Error("Couldn't revoke access");
   await revokeAndDelete(userId);
   for (const t of USER_TABLES) {
     const { error } = await supabaseAdmin.from(t).delete().eq("user_id", userId);
@@ -133,7 +144,7 @@ async function wipeUser(userId: string) {
 }
 
 export const revokeMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context);
@@ -141,13 +152,13 @@ export const revokeMember = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (error || !u.user) throw new Error("Member not found");
-    if (u.user.email) await supabaseAdmin.from("allowed_emails").delete().eq("email", normaliseEmail(u.user.email));
+    if (u.user.email) { const { error } = await supabaseAdmin.from("allowed_emails").delete().eq("email", normaliseEmail(u.user.email)); if (error) throw error; }
     await wipeUser(data.userId);
     return { ok: true };
   });
 
 export const deleteMyAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .handler(async ({ context }) => {
     await wipeUser(context.userId);
     return { ok: true };
@@ -184,7 +195,8 @@ export const finishGoogleSignIn = createServerFn({ method: "POST" })
       const { data: allowed, error } = await supabaseAdmin.from("allowed_emails").select("email").eq("email", email).maybeSingle();
       if (error) return { ok: false, code: "error" };
       if (!allowed) {
-        await supabaseAdmin.auth.admin.deleteUser(context.userId);
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(context.userId);
+        if (deleteError) return { ok: false, code: 'error' };
         return { ok: false, code: "not_invited" };
       }
     }

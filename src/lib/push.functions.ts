@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import { requireMember as requireSupabaseAuth } from './member-middleware';
 import { validPushEndpoint } from './push-rules';
 export const getPushPublicKey = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async () => {
  const seed=process.env['VAPID_KEY_SEED']; const email=process.env['OWNER_EMAIL'];

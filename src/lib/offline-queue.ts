@@ -12,8 +12,30 @@ export type QueueTable = "focus_sessions" | "interruptions" | "energy_ratings" |
 export type Op = { qid: string; table: QueueTable; row: Record<string, unknown>; attempts?: number; lastError?: string };
 
 export const MAX_ATTEMPTS = 3;
-const KEY = "tempo.queue.v1";
-const ATTENTION_KEY = "tempo.queue.attention.v1";
+let activeUser: string | null = null;
+let KEY = "tempo.queue.v1";
+let ATTENTION_KEY = "tempo.queue.attention.v1";
+export function setQueueUser(userId: string | null) {
+  if (activeUser === userId) return;
+  activeUser = userId;
+  KEY = `tempo.queue.v1.${userId ?? 'signed-out'}`;
+  ATTENTION_KEY = `tempo.queue.attention.v1.${userId ?? 'signed-out'}`;
+  loaded = false; snapshot = []; attention = [];
+  // Legacy rows with explicit ownership can safely migrate; unowned rows never replay.
+  const migrations: [string,string][] = [['tempo.queue.v1', KEY], ['tempo.queue.attention.v1', ATTENTION_KEY]];
+  if (userId) for (const [legacy, target] of migrations) {
+    try {
+      const rows = JSON.parse(localStorage.getItem(legacy) ?? '[]') as Op[];
+      const own = rows.filter(o => o.row['user_id'] === userId);
+      if (own.length) {
+        const existing = JSON.parse(localStorage.getItem(target) ?? '[]') as Op[];
+        localStorage.setItem(target, JSON.stringify([...existing, ...own]));
+        localStorage.setItem(legacy, JSON.stringify(rows.filter(o => o.row['user_id'] !== userId)));
+      }
+    } catch { /* keep legacy records untouched on storage failure */ }
+  }
+  listeners.forEach(l => l());
+}
 const listeners = new Set<() => void>();
 let qc: QueryClient | null = null;
 let flushing = false;
@@ -72,7 +94,10 @@ export function pendingRows(table: QueueTable) {
 }
 
 export function enqueue(table: QueueTable, row: Record<string, unknown>) {
-  write([...read(), { qid: crypto.randomUUID(), table, row, attempts: 0 }]);
+  if (!activeUser) { toast.error('Sign in before saving an entry.'); return; }
+  write([...read(), { qid: crypto.randomUUID(), table, row: { ...row, user_id: activeUser }, attempts: 0 }]);
+  qc?.invalidateQueries({ queryKey: ['daylogs'] });
+  qc?.invalidateQueries({ queryKey: ['checkin-notify'] });
   void flush();
 }
 
@@ -88,6 +113,8 @@ export async function flush() {
 
 async function runFlush() {
   if (flushing || typeof window === "undefined") return;
+  if (!activeUser) return;
+  const owner = activeUser;
   const start = read();
   if (!start.length) return;
   flushing = true;
@@ -98,18 +125,23 @@ async function runFlush() {
   try {
     // Visit each queued row at most once per flush, in order.
     for (const qid of start.map((o) => o.qid)) {
+      if (activeUser !== owner) break;
       const op = read().find((o) => o.qid === qid);
       if (!op) continue;
+      if (op.row['user_id'] !== owner) continue;
       let message: string | null = null;
       try {
         const { error } = await supabase
           .from(op.table)
           .upsert(op.row as never, { onConflict: "id", ignoreDuplicates: true });
-        if (error && error.code !== "23505") message = error.message || "error";
+        // ON CONFLICT(id) already accepts same-id replays. Any other unique
+        // conflict belongs in attention, never silently discard its contents.
+        if (error) message = error.message || "error";
       } catch (e) {
         message = e instanceof Error ? e.message : "network";
         if (isNetworkError(message)) break; // offline: stop, keep everything
       }
+      if (activeUser !== owner) break;
       if (message === null) {
         write(read().filter((o) => o.qid !== qid));
         synced++;

@@ -1,4 +1,11 @@
 export type ThemeChoice = 'system' | 'dark' | 'light';
+export function rollbackPatch<T extends Record<string, unknown>>(current:T,previous:T,patch:Partial<T>):T {
+  const next={...current};
+  for(const key of Object.keys(patch) as (keyof T)[]) {
+    if(JSON.stringify(current[key])===JSON.stringify(patch[key])) next[key]=previous[key];
+  }
+  return next;
+}
 export function resolveTheme(choice: string | undefined, systemLight: boolean): 'light' | 'dark' {
   return choice === 'light' || ((!choice || choice === 'system') && systemLight) ? 'light' : 'dark';
 }

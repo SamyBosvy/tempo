@@ -1,4 +1,4 @@
-import { claimNotification } from "@/lib/push";
+import { deliverReminder } from "@/lib/push";
 import { reminderKey } from "@/lib/push-rules";
 // Prime reminder while Tempo is open (foreground or background tab), shown via the service worker.
 import { useEffect } from "react";
@@ -13,26 +13,18 @@ export function PrimeNotifier({ settings }: { settings: Settings }) {
   const { events } = useDayEvents(new Date(), settings.keywords);
   useEffect(() => {
     if (!settings.notifications || typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    const sent: string[] = JSON.parse(localStorage.getItem("tempo.notified") ?? "[]");
-    let changed = false;
     for (const e of events) {
       if (!e.stressful || e.allDay) continue;
       const start = new Date(e.start).getTime();
       const lead = settings.prime_lead_min * 60_000;
-      if (now >= start - lead && now < start && !sent.includes(e.id)) {
-        sent.push(e.id);
-        changed = true;
-        void (async () => {
-          if (settings.push_enabled && !await claimNotification(reminderKey("prime",e.id,new Date(e.start).toISOString()))) return;
-          await showAppNotification("Tempo", {
+      if (now >= start - lead && now < start) {
+          void deliverReminder(settings.user_id,reminderKey('prime',e.id,new Date(e.start).toISOString()),settings.push_enabled,`tempo.notified.${settings.user_id}`,"Tempo", {
           body: `Big one at ${fmtTime(e.start)}. Two minutes to settle?`,
           tag: e.id,
           url: primeUrl(e.id, e.start),
           });
-        })();
       }
     }
-    if (changed) localStorage.setItem("tempo.notified", JSON.stringify(sent.slice(-50)));
-  }, [now, events, settings.notifications, settings.prime_lead_min, settings.push_enabled]);
+  }, [now, events, settings.notifications, settings.prime_lead_min, settings.push_enabled, settings.user_id]);
   return null;
 }

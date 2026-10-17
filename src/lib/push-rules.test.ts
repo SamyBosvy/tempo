@@ -9,4 +9,9 @@ describe('private reminder rules',()=>{
  it('presence expires so closed apps can receive pushes',()=>{expect(presenceAlive(1000,new Date(1001).toISOString())).toBe(true);expect(presenceAlive(1000,new Date(999).toISOString())).toBe(false);expect(presenceAlive(1000,null)).toBe(false);});
  it('only real HTTPS push providers can receive requests',()=>{expect(validPushEndpoint('https://fcm.googleapis.com/fcm/send/token')).toBe(true);expect(validPushEndpoint('https://web.push.apple.com/token')).toBe(true);expect(validPushEndpoint('https://127.0.0.1/private')).toBe(false);expect(validPushEndpoint('https://fcm.googleapis.com.evil.com/token')).toBe(false);expect(validPushEndpoint('http://fcm.googleapis.com/token')).toBe(false);expect(validPushEndpoint('https://fcm.googleapis.com:8443/token')).toBe(false);});
  it('weekly dates and hours use device timezone, not server UTC',()=>{const p=zonedParts(Date.parse('2026-10-18T23:30:00Z'),'Asia/Tokyo');expect(p).toEqual({day:'2026-10-19',weekday:1,hour:8});});
+ it('handles local midnight and the autumn DST repeated hour',()=>{
+  expect(zonedParts(Date.parse('2026-10-18T23:00:00Z'),'Europe/London')).toEqual({day:'2026-10-19',weekday:1,hour:0});
+  expect(zonedParts(Date.parse('2026-10-25T00:30:00Z'),'Europe/London')).toEqual({day:'2026-10-25',weekday:0,hour:1});
+  expect(zonedParts(Date.parse('2026-10-25T01:30:00Z'),'Europe/London')).toEqual({day:'2026-10-25',weekday:0,hour:1});
+ });
 });

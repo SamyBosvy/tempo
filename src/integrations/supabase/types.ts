@@ -540,6 +540,10 @@ export type Database = {
     }
     Functions: {
       claim_reminder: { Args: { _key: string }; Returns: boolean }
+      convert_manual_block: {
+        Args: { _manual: string; _series: Json }
+        Returns: undefined
+      }
       get_history_month: {
         Args: { _month: string; _tz: string }
         Returns: Json
@@ -569,6 +573,7 @@ export type Database = {
         Args: { _end: string; _start: string; _tz: string }
         Returns: Json
       }
+      is_active_member: { Args: never; Returns: boolean }
       list_members: {
         Args: { _limit: number; _offset: number }
         Returns: {
@@ -578,6 +583,14 @@ export type Database = {
           total: number
           user_id: string
         }[]
+      }
+      replace_block_occurrence: {
+        Args: { _block: string; _date: string; _replacement: Json }
+        Returns: undefined
+      }
+      restore_history_session: {
+        Args: { _interruptions: Json; _row: Json }
+        Returns: undefined
       }
       search_history: {
         Args: { _offset?: number; _search?: string; _type?: string }

@@ -2,7 +2,8 @@
 // like the focus timer, so a locked phone or hidden tab never loses the phase.
 import { isBreathPattern, type BreathPattern } from "./breath";
 
-export const PRIME_KEY = "tempo.prime.v1";
+export let PRIME_KEY = "tempo.prime.v1";
+export function setPrimeUser(userId: string | null) { PRIME_KEY = `tempo.prime.v1.${userId ?? 'signed-out'}`; }
 export const QUICK_PRIME_MIN = 1;
 
 export type RunningPrime = {

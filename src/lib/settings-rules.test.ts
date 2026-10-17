@@ -1,5 +1,9 @@
 import {describe,it,expect} from 'vitest';
-import {addKeyword,resolveTheme} from './settings-rules';
+import {addKeyword,resolveTheme,rollbackPatch} from './settings-rules';
+it('failed setting rollback preserves unrelated successful edits',()=>{
+ expect(rollbackPatch({theme:'light',minutes:90},{theme:'dark',minutes:25},{theme:'light'})).toEqual({theme:'dark',minutes:90});
+ expect(rollbackPatch({theme:'system',minutes:90},{theme:'dark',minutes:25},{theme:'light'})).toEqual({theme:'system',minutes:90});
+});
 describe('Settings keyword rules',()=>{
   it('trims added keywords',()=>expect(addKeyword(['review'],'  Interview  ')).toEqual({ok:true,keywords:['review','Interview']}));
   it('deduplicates ignoring case',()=>expect(addKeyword(['Review'],' review ')).toMatchObject({ok:false}));

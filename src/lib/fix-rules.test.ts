@@ -65,7 +65,11 @@ function fakeDb(row: Record<string, unknown>) {
     delete: () => ({ eq: async () => { calls.push({ op: "delete", table }); return { error: null }; } }),
     insert: async (payload: unknown) => { calls.push({ op: "insert", table, payload }); return { error: null }; },
   });
-  return { db: { from }, calls };
+  const rpc = async (_name: string, args: { _row: unknown; _interruptions: unknown }) => {
+    calls.push({ op: 'restore-atomic', table: 'focus_sessions', payload: args });
+    return { error: null };
+  };
+  return { db: { from, rpc }, calls };
 }
 
 describe("B11 history delete", () => {
@@ -76,7 +80,6 @@ describe("B11 history delete", () => {
     expect(calls).toEqual([{ op: "delete", table: "focus_sessions" }]);
     if (!res.ok) throw new Error("expected ok");
     await restoreDeleted(db, res.saved);
-    expect(calls[1]).toEqual({ op: "insert", table: "focus_sessions", payload: row });
-    expect(calls[2]).toEqual({ op: "insert", table: "interruptions", payload: [{ id: "i1", session_id: "s1" }] });
+    expect(calls[1]).toEqual({ op: 'restore-atomic', table: 'focus_sessions', payload: { _row: row, _interruptions: [{id:'i1',session_id:'s1'}] } });
   });
 });

@@ -95,6 +95,7 @@ function Access() {
       else setManual(r.link);
     },
     onError: () => toast.error("Couldn't resend the invite. Try again."),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['invites'] }),
   });
 
   const add = useMutation({
@@ -121,6 +122,7 @@ function Access() {
     onError: () => toast.error("Couldn't revoke that member. Try again."),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ['members-all'] });
       qc.invalidateQueries({ queryKey: ["invites"] });
     },
   });
@@ -168,10 +170,10 @@ function Access() {
                     <span className="min-w-0">
                       <span className="block truncate">{r.email}</span>
                       <span className="block text-xs text-muted-foreground">
-                        {st.status === "joined" ? `Joined ${new Date(st.date).toLocaleDateString("en-GB")}` : `Invited ${new Date(st.date).toLocaleDateString("en-GB")}`}
+                        {allMembers.isError ? 'Status unavailable' : allMembers.isLoading ? 'Checking status…' : st.status === "joined" ? `Joined ${new Date(st.date).toLocaleDateString("en-GB")}` : `Invited ${new Date(st.date).toLocaleDateString("en-GB")}`}
                       </span>
                     </span>
-                    <span className="flex shrink-0 gap-1">
+                    <span className="flex max-w-[55%] shrink-0 flex-wrap justify-end gap-1">
                       {st.status === "invited" && (
                         <Button variant="ghost" size="sm" disabled={left > 0 || resend.isPending} onClick={() => resend.mutate(r.email)}>
                           {left > 0 ? `Resend (${left}s)` : "Resend"}

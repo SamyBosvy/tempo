@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireMember } from './member-middleware';
 import {
   GOOGLE_SCOPES,
   ReconnectRequired,
@@ -13,7 +13,7 @@ import {
 import { googleCallbackUri, googleReturnPath } from "./google-connect";
 
 export const startGoogleConnect = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((input) =>
     z.object({ origin: z.string().url(), returnPath: z.string().max(2048) }).parse(input),
   )
@@ -59,7 +59,7 @@ export type EventsResult =
   | { status: "disconnected" | "reconnect"; events: [] };
 
 export const getCalendarEvents = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .inputValidator((d) =>
     z.object({ timeMin: z.string().datetime(), timeMax: z.string().datetime() }).parse(d),
   )
@@ -134,7 +134,7 @@ export const getCalendarEvents = createServerFn({ method: "POST" })
   });
 
 export const getCalendarList = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .handler(async ({ context }) => {
     let token: string | null;
     try {
@@ -165,7 +165,7 @@ export const getCalendarList = createServerFn({ method: "POST" })
   });
 
 export const disconnectGoogle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireMember])
   .handler(async ({ context }) => {
     await revokeAndDelete(context.userId);
     const { error } = await context.supabase

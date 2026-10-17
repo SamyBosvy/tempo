@@ -1,3 +1,10 @@
+# Pre-publish audit
+- [x] Verify hosted signup restrictions, role gates, RPC/table permissions and cron protection.
+- [x] Sweep 42 phone screens and core saved-data flows in six size/theme combinations; fix confirmed bugs; 167 tests passed.
+- [x] Report findings and explicitly distinguish incomplete checks.
+- [ ] Finish live Calendar/Google consent and email invitation/resend/recovery delivery — requires interactive Google consent and a real recipient inbox.
+- [ ] Finish installed-phone push, lock-screen, shortcuts and update checks — requires publication and physical devices.
+
 # Safety notice fix
 # Final polish X6–X10
 - [x] Illustrated empty states and install card/shortcuts.

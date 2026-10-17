@@ -1,4 +1,5 @@
-import { claimNotification } from "@/lib/push";
+import { deliverReminder } from "@/lib/push";
+import { pendingRows, useQueueSize } from '@/lib/offline-queue';
 import { reminderKey } from "@/lib/push-rules";
 // After-meeting check-in: when a stressful meeting ends unrated while Tempo is
 // open, nudge once per meeting. Dismissed check-ins never nudge.
@@ -18,6 +19,7 @@ function dayKeyLocal(d: Date) {
 }
 
 export function CheckinNotifier({ settings }: { settings: Settings }) {
+  const queueSize = useQueueSize();
   const now = useNow(60_000);
   const today = dayKeyLocal(new Date());
   const { events } = useDayEvents(new Date(), settings.keywords);
@@ -40,26 +42,19 @@ export function CheckinNotifier({ settings }: { settings: Settings }) {
   useEffect(() => {
     if (!settings.checkin_notify || typeof Notification === "undefined" || Notification.permission !== "granted") return;
     if (!done.data) return;
-    const sent: string[] = JSON.parse(localStorage.getItem(NOTIFIED_KEY) ?? "[]");
-    let changed = false;
+    const queued = pendingRows('energy_ratings').filter(r=>r['local_date']===today&&r['kind']==='after_meeting');
     for (const e of events) {
       if (!e.stressful || e.allDay) continue;
-      if (done.data.rated.has(e.id) || done.data.dismissed.has(e.id) || sent.includes(e.id)) continue;
+      if (done.data.rated.has(e.id) || done.data.dismissed.has(e.id) || queued.some(r=>r['event_id']===e.id)) continue;
       const end = new Date(e.end).getTime();
       if (now >= end + 2 * 60_000) {
-        sent.push(e.id);
-        changed = true;
-        void (async () => {
-          if (settings.push_enabled && !await claimNotification(reminderKey("checkin",e.id,new Date(e.end).toISOString()))) return;
-          await showAppNotification("Tempo", {
+          void deliverReminder(settings.user_id,reminderKey('checkin',e.id,new Date(e.end).toISOString()),settings.push_enabled,`${NOTIFIED_KEY}.${settings.user_id}`,"Tempo", {
           body: "How was that meeting? One tap to rate it.",
           tag: `checkin-${e.id}`,
           url: "/today",
           });
-        })();
       }
     }
-    if (changed) localStorage.setItem(NOTIFIED_KEY, JSON.stringify(sent.slice(-50)));
-  }, [now, events, done.data, settings.checkin_notify, settings.push_enabled]);
+  }, [now, events, done.data, settings.checkin_notify, settings.push_enabled, settings.user_id, today, queueSize]);
   return null;
 }

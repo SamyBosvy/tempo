@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { csvCell, downloadCsv, toCsv } from "./csv";
+import { pendingRows, attentionRows } from './offline-queue';
+import { localDateKey } from './timeline';
 
 const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_ratings", "prime_sessions", "event_flags", "manual_blocks", "recurring_blocks", "recurring_skips", "checkin_dismissals", "push_subscriptions", "push_focus_deadlines", "push_presence", "reminder_claims"] as const;
 
@@ -7,7 +9,15 @@ const TABLES = ["user_settings", "focus_sessions", "interruptions", "energy_rati
 async function fetchAll<T>(table: (typeof TABLES)[number]): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from(table).select("*").range(from, from + 999);
+    let query = supabase.from(table).select('*');
+    if (table==='event_flags') query=query.order('event_id');
+    else if (table==='recurring_skips') query=query.order('block_id').order('local_date');
+    else if(table==='checkin_dismissals') query=query.order('event_id').order('local_date');
+    else if(table==='reminder_claims') query=query.order('reminder_key');
+    else if(table==='push_focus_deadlines') query=query.order('session_id');
+    else if(table==='user_settings'||table==='push_presence') query=query.order('user_id');
+    else query=query.order('id');
+    const { data, error } = await query.range(from, from + 999);
     if (error) throw error;
     rows.push(...(data as T[]));
     if (data.length < 1000) break;
@@ -20,6 +30,8 @@ export async function exportMyData() {
   const out: Record<string, unknown[]> = {};
   for (const t of TABLES) out[t] = await fetchAll(t);
   const { data: u } = await supabase.auth.getUser();
+  out['offline_pending'] = ['focus_sessions','interruptions','energy_ratings','prime_sessions'].flatMap(t=>pendingRows(t as Parameters<typeof pendingRows>[0]).map(row=>({table:t,row})));
+  out['offline_attention'] = attentionRows();
   const blob = new Blob(
     [JSON.stringify({ exported_at: new Date().toISOString(), email: u.user?.email, note: "Event titles are never stored by Tempo.", ...out }, null, 2)],
     { type: "application/json" },
@@ -27,7 +39,7 @@ export async function exportMyData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tempo-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `tempo-export-${localDateKey(new Date())}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

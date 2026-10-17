@@ -26,7 +26,15 @@ export type FocusState = {
   parked?: string[];
 };
 
-const KEY = "tempo.focus.v1";
+let KEY = "tempo.focus.v1";
+export function setTimerUser(userId: string | null) {
+  const next = `tempo.focus.v1.${userId ?? 'signed-out'}`;
+  if (KEY === next) return;
+  KEY = next;
+  BKEY = `tempo.break.v1.${userId ?? 'signed-out'}`;
+  cache = undefined; bcache = undefined;
+  listeners.forEach(l => l());
+}
 const listeners = new Set<() => void>();
 const mutations = new Set<(s: FocusState | null) => void>();
 export function onFocusMutation(cb: (s: FocusState | null) => void) { mutations.add(cb); return () => { mutations.delete(cb); }; }
@@ -145,7 +153,7 @@ export const focusTimer = {
 
 /** Break timer: separate from focus, never logged. */
 export type BreakState = { endsAt: number; minutes: number; lastLen: number };
-const BKEY = "tempo.break.v1";
+let BKEY = "tempo.break.v1";
 let bcache: BreakState | null | undefined;
 function readBreak(): BreakState | null {
   if (typeof window === "undefined") return null;
