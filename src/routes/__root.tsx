@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { bindQueryClient, startQueueSync } from "@/lib/offline-queue";
+import { initialiseInstall } from "@/lib/install";
 import { registerServiceWorker } from "@/lib/pwa";
 import { trackQuerySync } from '@/lib/sync-status';
 
@@ -115,6 +116,7 @@ function RootComponent() {
     bindQueryClient(queryClient);
     const stop = startQueueSync();
     const stopTracking = trackQuerySync(queryClient);
+    initialiseInstall();
     registerServiceWorker();
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;

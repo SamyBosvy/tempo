@@ -1,3 +1,5 @@
+import { claimNotification } from "@/lib/push";
+import { reminderKey } from "@/lib/push-rules";
 // Weekly review: one Monday-morning notification while Tempo is open, linking
 // to Insights. Skipped when the review card was already dismissed this week.
 import { useEffect } from "react";
@@ -16,11 +18,14 @@ export function WeeklyReviewNotifier({ settings }: { settings: Settings }) {
     if (localStorage.getItem(`tempo.weekReview.${key}`)) return;
     if (localStorage.getItem(`tempo.weekReviewNotified.${key}`)) return;
     localStorage.setItem(`tempo.weekReviewNotified.${key}`, "1");
-    void showAppNotification("Tempo", {
+    void (async () => {
+      if (settings.push_enabled && !await claimNotification(reminderKey("weekly",key,""))) return;
+      await showAppNotification("Tempo", {
       body: "Your week in review is ready.",
       tag: `week-review-${key}`,
-      url: "/insights",
-    });
-  }, [now, settings.weekly_review_notify]);
+      url: "/insights#last-week",
+      });
+    })();
+  }, [now, settings.weekly_review_notify, settings.push_enabled]);
   return null;
 }

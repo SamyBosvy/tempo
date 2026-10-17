@@ -28,6 +28,8 @@ export type FocusState = {
 
 const KEY = "tempo.focus.v1";
 const listeners = new Set<() => void>();
+const mutations = new Set<(s: FocusState | null) => void>();
+export function onFocusMutation(cb: (s: FocusState | null) => void) { mutations.add(cb); return () => { mutations.delete(cb); }; }
 let cache: FocusState | null | undefined;
 
 function read(): FocusState | null {
@@ -46,6 +48,7 @@ function write(s: FocusState | null) {
   if (s) localStorage.setItem(KEY, JSON.stringify(s));
   else localStorage.removeItem(KEY);
   listeners.forEach((l) => l());
+  mutations.forEach(cb => cb(s));
 }
 
 if (typeof window !== "undefined") {

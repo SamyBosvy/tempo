@@ -1,3 +1,5 @@
+import { claimNotification } from "@/lib/push";
+import { reminderKey } from "@/lib/push-rules";
 // After-meeting check-in: when a stressful meeting ends unrated while Tempo is
 // open, nudge once per meeting. Dismissed check-ins never nudge.
 import { useEffect } from "react";
@@ -47,14 +49,17 @@ export function CheckinNotifier({ settings }: { settings: Settings }) {
       if (now >= end + 2 * 60_000) {
         sent.push(e.id);
         changed = true;
-        void showAppNotification("Tempo", {
+        void (async () => {
+          if (settings.push_enabled && !await claimNotification(reminderKey("checkin",e.id,new Date(e.end).toISOString()))) return;
+          await showAppNotification("Tempo", {
           body: "How was that meeting? One tap to rate it.",
           tag: `checkin-${e.id}`,
           url: "/today",
-        });
+          });
+        })();
       }
     }
     if (changed) localStorage.setItem(NOTIFIED_KEY, JSON.stringify(sent.slice(-50)));
-  }, [now, events, done.data, settings.checkin_notify]);
+  }, [now, events, done.data, settings.checkin_notify, settings.push_enabled]);
   return null;
 }

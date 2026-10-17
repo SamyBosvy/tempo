@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/tempo/EmptyState";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -157,7 +158,7 @@ function Access() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Invited</h2>
         {invites.isLoading ? <ScreenSkeleton rows={2} header={false} /> : invites.isError ? <p role="alert">Couldn't load invites.</p> : (
           <>
-            {invites.data!.rows.length === 0 && <p className="text-muted-foreground">No invites yet.</p>}
+            {invites.data!.rows.length === 0 && <EmptyState action={<Button variant="outline" onClick={()=>document.getElementById("inv")?.focus()}>Invite someone</Button>}>Your circle starts here.</EmptyState>}
             <ul className="space-y-2">
               {invites.data!.rows.map((r) => {
                 const st = inviteStatus(r, allMembers.data ?? []);

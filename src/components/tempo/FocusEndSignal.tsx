@@ -1,3 +1,5 @@
+import { claimNotification } from "@/lib/push";
+import { reminderKey } from "@/lib/push-rules";
 // F5 + F6: keeps the screen awake during focus and fires the end signal
 // (chime, vibration, notification) once when time is up, while Tempo is alive.
 import { useEffect } from "react";
@@ -22,7 +24,11 @@ export function FocusEndSignal({ settings }: { settings: Settings }) {
       if (late) return; // returned long after the end: just show the end state
       if (settings.end_sound) playChime();
       if (settings.vibration) vibrateEnd();
-      if (settings.end_notify) void showAppNotification(`Focus done · ${cur.targetMin} min`, { body: "Time's up. Wrap up when you're ready.", tag: `focus-${cur.id}`, url: "/focus" });
+      if (settings.end_notify) void (async () => {
+        const end = new Date(cur.resumedAt + cur.targetMin * 60_000 - cur.accumulatedMs).toISOString();
+        if (settings.push_enabled && !await claimNotification(reminderKey('focus',cur.id,end))) return;
+        await showAppNotification(`Focus done · ${cur.targetMin} min`, { body: "Time's up. Wrap up when you're ready.", tag: `focus-${cur.id}`, url: "/focus" });
+      })();
     };
     if (remaining <= 0) {
       fire();
@@ -30,6 +36,6 @@ export function FocusEndSignal({ settings }: { settings: Settings }) {
     }
     const t = window.setTimeout(fire, remaining);
     return () => window.clearTimeout(t);
-  }, [s, settings.end_sound, settings.end_notify, settings.vibration]);
+  }, [s, settings.end_sound, settings.end_notify, settings.vibration, settings.push_enabled]);
   return null;
 }

@@ -71,6 +71,13 @@
       "when": 1792233549699,
       "tag": "0009_notification_toggles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792236254099,
+      "tag": "0010_private_push_reminders",
+      "breakpoints": true
     }
   ]
 }

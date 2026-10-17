@@ -1,3 +1,5 @@
+import { InstallTempo } from "@/components/tempo/InstallTempo";
+import { EmptyState } from "@/components/tempo/EmptyState";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Settings as Gear, Plus, Wind, Zap, CalendarOff, MoreHorizontal, Play, Repeat } from "lucide-react";
@@ -205,9 +207,10 @@ function Today() {
         </Button>
       </div>
 
+      {isToday && <InstallTempo />}
       {dayOff ? (
-        <Card className="flex items-center justify-between gap-3">
-          <p className="text-sm"><span className="font-semibold">Day off</span> · no work hours set</p>
+        <Card className="space-y-3">
+          <EmptyState>Day off · no work hours set</EmptyState>
           {!isPast && (
             <Button asChild size="sm" variant="outline">
               <Link to="/focus"><Play /> Start focus</Link>
@@ -234,7 +237,7 @@ function Today() {
       )}
       {status === "disconnected" && !settings.google_email && isToday && (
         <Card className="space-y-3">
-          <p className="text-sm text-muted-foreground">Connect your calendar to find focus time, or add blocks by hand.</p>
+          <EmptyState>A clear day starts here.</EmptyState>
           <ConnectGoogleButton label="Connect Google Calendar" />
         </Card>
       )}
@@ -540,7 +543,7 @@ function Timeline({ events, slots, isToday, readOnly, now, day }: { events: DayE
     ...events.map((e) => ({ t: new Date(e.start).getTime(), end: new Date(e.end).getTime(), kind: "event" as const, e })),
   ].sort((a, b) => a.t - b.t);
 
-  if (!items.length) return <p className="text-muted-foreground">{isToday ? "No working hours left today." : "Nothing on this day."}</p>;
+  if (!items.length) return <EmptyState>{isToday ? "No meetings left today." : "A clear day ahead."}</EmptyState>;
 
   const nowIndex = isToday ? items.findIndex((it) => it.t >= now) : -1;
   const nowLine = (

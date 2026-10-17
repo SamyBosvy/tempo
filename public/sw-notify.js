@@ -15,3 +15,17 @@ self.addEventListener("notificationclick", (event) => {
     }),
   );
 });
+
+// Private push payloads contain no event titles or session intentions.
+self.addEventListener("push", (event) => {
+  let data;
+  try { data = event.data.json(); } catch { return; }
+  const allowed = ["/prime", "/focus", "/today", "/insights", "/settings"];
+  let url;
+  try { url = new URL(data.url, self.location.origin); } catch { return; }
+  if (url.origin !== self.location.origin || !allowed.includes(url.pathname)) return;
+  event.waitUntil(self.registration.showNotification(data.title || "Tempo", {
+    body: data.body || "", tag: data.tag, icon: "/icon-192.png", badge: "/icon-192.png",
+    data: { url: url.pathname + url.search + url.hash },
+  }));
+});

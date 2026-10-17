@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/tempo/EmptyState";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -159,6 +160,7 @@ function Setup() {
       <div className="space-y-1.5">
         <Label htmlFor="intent">What's this block for?</Label>
         <Input id="intent" maxLength={200} className="h-12 text-base" value={intention} onChange={(e) => setIntention(e.target.value)} placeholder="Optional" />
+        {recent.data?.length === 0 && <EmptyState>Your next intention starts here.</EmptyState>}
         {!!recent.data?.length && (
           <div className="flex flex-wrap gap-2 pt-1" aria-label="Recent intentions">
             {recent.data.map((t) => (
