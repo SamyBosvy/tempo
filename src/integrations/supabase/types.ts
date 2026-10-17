@@ -371,6 +371,7 @@ export type Database = {
           breath_minutes: number
           breath_pattern: string
           calendar_ids: string[]
+          checkin_notify: boolean
           custom_interruption: string | null
           daily_focus_target_min: number
           end_notify: boolean
@@ -389,6 +390,7 @@ export type Database = {
           user_id: string
           vibration: boolean
           wake_lock: boolean
+          weekly_review_notify: boolean
           work_end: string
           work_hours: Json
           work_start: string
@@ -397,6 +399,7 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          checkin_notify?: boolean
           custom_interruption?: string | null
           daily_focus_target_min?: number
           end_notify?: boolean
@@ -415,6 +418,7 @@ export type Database = {
           user_id: string
           vibration?: boolean
           wake_lock?: boolean
+          weekly_review_notify?: boolean
           work_end?: string
           work_hours?: Json
           work_start?: string
@@ -423,6 +427,7 @@ export type Database = {
           breath_minutes?: number
           breath_pattern?: string
           calendar_ids?: string[]
+          checkin_notify?: boolean
           custom_interruption?: string | null
           daily_focus_target_min?: number
           end_notify?: boolean
@@ -441,6 +446,7 @@ export type Database = {
           user_id?: string
           vibration?: boolean
           wake_lock?: boolean
+          weekly_review_notify?: boolean
           work_end?: string
           work_hours?: Json
           work_start?: string

@@ -64,6 +64,13 @@
       "when": 1792186409807,
       "tag": "0008_per_day_work_hours",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792233549699,
+      "tag": "0009_notification_toggles",
+      "breakpoints": true
     }
   ]
 }
