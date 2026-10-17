@@ -14,16 +14,16 @@
 - Lists that can exceed 1,000 rows page (history by week, access lists by 20) or aggregate server-side; Insights numbers come from the security-invoker `get_insights` RPC.
 - Writes only from explicit user actions, never from render or effects on computed values. Check `{ error }` on every database and Google call, toast on failure, roll back optimistic updates, and invalidate the right query keys after every mutation.
 - Store times in UTC, show local; "today" is the user's local day. All-day events are shown at the top and excluded from focus-window maths.
-- Logs (focus_sessions, interruptions, energy_ratings, prime_sessions) go through src/lib/offline-queue.ts with client-generated ids — so offline writes replay idempotently.
+- Logs use the per-user offline queue with client-generated ids; timers/cache switch with identity to prevent cross-account disclosure.
 - Event titles/descriptions/attendees are never stored in the database; only Google event id, times and flags — data minimisation.
 - Google refresh tokens live encrypted (AES-GCM, TOKEN_ENCRYPTION_KEY) in `google_tokens`, service-role only; all calendar calls go through server functions.
-- Accounts are created only by the `setupAccount` server function (public sign-up is disabled); Google sign-in must pass `finishGoogleSignIn` (server-side allowlist check that grants the role or removes the account); the owner role comes solely from the OWNER_EMAIL secret.
+- Public signup stays disabled; setupAccount requires verified inbox ownership, Google admission checks the allowlist, and OWNER_EMAIL alone grants owner. Ordinary functions/RLS require active membership; revoke roles before cleanup.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Register service workers only via src/lib/pwa.ts, never in dev/preview; prompt updates defer during focus/prime.
 - Every blocking modal or gate screen must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned on every screen size, and must never trap the user if a save fails.
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth uses direct navigation, a validated Origin, signed restricted return path and sessionStorage; consume results once in the shell and refresh Calendar queries.
-- Recurring manual blocks live in recurring_blocks and are expanded per day client-side (timeline.expandRecurring); one-day edits add a recurring_skips row plus a one-off manual block, so the series stays intact.
+- Recurring blocks expand client-side; occurrence replacements, series conversions and session Undo use invoker RPC transactions to prevent partial writes.
 - FocusEndSignal owns wake lock and one signal per target via `signalled`; timestamp timers survive reloads. Breaks use separate localStorage, never focus logs.
 - Prime derives phases from elapsed timestamps; audio is created by Begin and disposed on finish, route exit or tab hiding. Running prime state lives in localStorage (src/lib/prime-session.ts) from startedAt, so locks and reloads resume at the right phase.
 

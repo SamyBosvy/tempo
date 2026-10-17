@@ -22,7 +22,8 @@ export function setQueueUser(userId: string | null) {
   ATTENTION_KEY = `tempo.queue.attention.v1.${userId ?? 'signed-out'}`;
   loaded = false; snapshot = []; attention = [];
   // Legacy rows with explicit ownership can safely migrate; unowned rows never replay.
-  if (userId) for (const [legacy, target] of [['tempo.queue.v1', KEY], ['tempo.queue.attention.v1', ATTENTION_KEY]]) {
+  const migrations: [string,string][] = [['tempo.queue.v1', KEY], ['tempo.queue.attention.v1', ATTENTION_KEY]];
+  if (userId) for (const [legacy, target] of migrations) {
     try {
       const rows = JSON.parse(localStorage.getItem(legacy) ?? '[]') as Op[];
       const own = rows.filter(o => o.row['user_id'] === userId);

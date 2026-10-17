@@ -74,7 +74,8 @@ export function useSaveSettings() {
       return { prev };
     },
     onError: (_e, patch, ctx) => {
-      if (ctx?.prev) qc.setQueryData(settingsQuery.queryKey, (current:Settings|undefined)=>current?rollbackPatch(current,ctx.prev,patch):ctx.prev);
+      const previous=ctx?.prev;
+      if (previous) qc.setQueryData(settingsQuery.queryKey, current=>current?rollbackPatch(current,previous,patch):previous);
       toast.error("Couldn't save that setting. Try again.");
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["settings"] }),
