@@ -26,11 +26,13 @@ export async function runPushJob(db:DB){
  for(let offset=0;;offset+=20){
  const {data:users,error}=await db.from('user_settings').select('*').eq('push_enabled',true).order('user_id').range(offset,offset+19);if(error)throw error;
  for(const s of users??[]){try{
+ const {data:role,error:roleError}=await db.from('user_roles').select('role').eq('user_id',s.user_id).maybeSingle();if(roleError)throw roleError;if(!role)continue;
  const [{data:subs,error:e1},{data:presence,error:e2},{data:deadlines,error:e3}]=await Promise.all([db.from('push_subscriptions').select('*').eq('user_id',s.user_id).order('created_at'),db.from('push_presence').select('alive_until').eq('user_id',s.user_id).maybeSingle(),db.from('push_focus_deadlines').select('*').eq('user_id',s.user_id)]);if(e1||e2||e3)throw new Error('Reminder data unavailable');
  if(!subs?.length||presenceAlive(now,presence?.alive_until??null))continue;
  // One canonical account timezone prevents per-device duplicate weekly reminders.
  const tz=subs[0]?.timezone??'UTC',local=zonedParts(now,tz);
  const notify=async(key:string,title:string,body:string,url:string):Promise<boolean>=>{
+  const {data:active,error:activeError}=await db.from('user_roles').select('role').eq('user_id',s.user_id).maybeSingle();if(activeError)throw activeError;if(!active)return false;
   // Unique insert is the atomic claim shared by all devices and open-app notifiers.
   const {error:claim}=await db.from('reminder_claims').insert({user_id:s.user_id,reminder_key:key});if(claim){if(claim.code==='23505')return true;throw claim;}
   let delivered=false;

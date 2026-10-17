@@ -26,6 +26,12 @@ describe("B4 offline queue", () => {
     expect(saved).toContain("good");
     expect(pendingRows("energy_ratings").map((r) => r["id"])).toEqual(["bad"]);
   });
+  it('retains a different-id rating rejected by a daily unique constraint', async () => {
+    upsert.mockResolvedValue({error:{code:'23505',message:'duplicate morning rating'}});
+    enqueue('energy_ratings',{id:'unsaved-rating',note:'retain this note'});
+    await flush(); await flush(); await flush();
+    expect(attentionRows()[0]?.row).toMatchObject({id:'unsaved-rating',note:'retain this note'});
+  });
   it('never displays or replays another account’s pending notes', async () => {
     upsert.mockResolvedValue({error:{code:'network',message:'network failed'}});
     enqueue('energy_ratings',{id:'private-a',note:'private note'});

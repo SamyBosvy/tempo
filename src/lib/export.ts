@@ -10,7 +10,8 @@ async function fetchAll<T>(table: (typeof TABLES)[number]): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; ; from += 1000) {
     let query = supabase.from(table).select('*');
-    if (table==='recurring_skips') query=query.order('block_id').order('local_date');
+    if (table==='event_flags') query=query.order('event_id');
+    else if (table==='recurring_skips') query=query.order('block_id').order('local_date');
     else if(table==='checkin_dismissals') query=query.order('event_id').order('local_date');
     else if(table==='reminder_claims') query=query.order('reminder_key');
     else if(table==='push_focus_deadlines') query=query.order('session_id');

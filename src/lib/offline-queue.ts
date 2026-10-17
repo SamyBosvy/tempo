@@ -134,7 +134,9 @@ async function runFlush() {
         const { error } = await supabase
           .from(op.table)
           .upsert(op.row as never, { onConflict: "id", ignoreDuplicates: true });
-        if (error && error.code !== "23505") message = error.message || "error";
+        // ON CONFLICT(id) already accepts same-id replays. Any other unique
+        // conflict belongs in attention, never silently discard its contents.
+        if (error) message = error.message || "error";
       } catch (e) {
         message = e instanceof Error ? e.message : "network";
         if (isNetworkError(message)) break; // offline: stop, keep everything
