@@ -12,9 +12,7 @@
 ## Tempo engineering rules
 - Per-screen queries load only what each screen needs (see src/lib/day-data.ts); no global data dumps.
 - Lists that can exceed 1,000 rows page (history by week, access lists by 20) or aggregate server-side; Insights numbers come from the security-invoker `get_insights` RPC.
-- No database writes from render or effects based on computed values; writes only from explicit user actions.
-- Check `{ error }` on every database and Google call, toast on failure, roll back optimistic updates.
-- Invalidate the right query keys after every mutation.
+- Writes only from explicit user actions, never from render or effects on computed values. Check `{ error }` on every database and Google call, toast on failure, roll back optimistic updates, and invalidate the right query keys after every mutation.
 - Store times in UTC, show local; "today" is the user's local day. All-day events are shown at the top and excluded from focus-window maths.
 - Logs (focus_sessions, interruptions, energy_ratings, prime_sessions) go through src/lib/offline-queue.ts with client-generated ids — so offline writes replay idempotently.
 - Event titles/descriptions/attendees are never stored in the database; only Google event id, times and flags — data minimisation.
@@ -26,13 +24,10 @@
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth navigates directly to Google without popup coordination; derive the callback from the validated browser Origin, carry a restricted return path in signed state and sessionStorage, and consume redirect results once in the authenticated shell to refresh Calendar queries.
 - Recurring manual blocks live in recurring_blocks and are expanded per day client-side (timeline.expandRecurring); one-day edits add a recurring_skips row plus a one-off manual block, so the series stays intact.
-- Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, and fire once per target via a `signalled` flag — so reloads or tab switches never double-chime.
-- Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
+- Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, firing once per target via a `signalled` flag — reloads or tab switches never double-chime. Breaks use a separate localStorage timer and are never written to the database — breaks are not focus.
 - Prime derives phases from elapsed timestamps; audio is created by Begin and disposed on finish, route exit or tab hiding. Running prime state lives in localStorage (src/lib/prime-session.ts) from startedAt, so locks and reloads resume at the right phase.
 
-- Insights period summaries and completed-week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, so calendar details are never persisted.
-- Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once, so percentages represent occupied working time.
-
+- Insights period summaries and week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, never persisted. Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once.
 - History uses security-invoker weekly browsing with within-week continuation, all-time filtered search with bounded pages, and per-month day aggregates; add-session logs use the queue, edits preserve ids, and validation compares local input against UTC timestamps.
 - Theme resolution lives in a shared browser hook that listens to device preference changes and reads theme-colour from CSS tokens, so System stays live without persisting computed choices.
 - Sync status observes successful non-manual query cache updates and queue deliveries; the release identifier lives in a build constant, so status never claims an optimistic edit was synced.
