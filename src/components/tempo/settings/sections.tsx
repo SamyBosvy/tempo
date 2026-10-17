@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { SAFETY_TEXT } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
 import { cn } from "@/lib/utils";
 import { copyMondayToWeekdays, dayError, DAY_NAMES, resolveWorkHours, WEEK_ORDER, type WorkHours } from "@/lib/work-hours";
