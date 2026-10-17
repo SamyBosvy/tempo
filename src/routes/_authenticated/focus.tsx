@@ -102,6 +102,7 @@ function Setup() {
       energyBefore: e,
       nextEventAt: until ?? nextBusyAfter(events, new Date()),
     });
+  };
 
   if (step === "energy")
     return (
