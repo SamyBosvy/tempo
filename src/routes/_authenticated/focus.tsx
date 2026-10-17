@@ -94,7 +94,8 @@ function Setup() {
   const [hint, setHint] = useState(false);
   const effective = effectiveFocusMinutes(custom, len);
 
-  const begin = (e: number | null) =>
+  const begin = (e: number | null) => {
+    tapHaptic();
     focusTimer.start({
       targetMin: effective,
       intention: intention.trim().slice(0, 200),
