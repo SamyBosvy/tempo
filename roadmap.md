@@ -2,7 +2,7 @@
 # Final polish X6–X10
 - [x] Illustrated empty states and install card/shortcuts.
 - [x] Private push subscriptions, five-minute scheduling and shared dedupe.
-- [x] Deferred update notice, exports/deletion, 157 tests and phone checks.
+- [x] Deferred update notice, exports/deletion, 158 tests and phone checks.
 - [ ] Confirm real installed-device shortcut launches, closed-app push/taps and waiting-version refresh — needs published app and physical devices.
 
 - [x] Keep the continue button pinned within safe phone viewport bounds.
