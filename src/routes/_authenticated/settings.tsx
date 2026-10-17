@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSettings, useSaveSettings, type Settings } from "@/lib/settings";
 import { disconnectGoogle, getCalendarList } from "@/lib/google.functions";
 import { deleteMyAccount } from "@/lib/access.functions";
-import { exportMyData } from "@/lib/export";
+import { exportMyData, exportFocusSessionsCsv, exportEnergyRatingsCsv } from "@/lib/export";
+import { permissionLabel, showAppNotification, type NotifyPermission } from "@/lib/notify";
 import { PATTERNS, type BreathPattern } from "@/lib/breath";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -332,7 +333,9 @@ function PrivacySection() {
       </p>
       <OfflineItems />
       <AttentionSection />
-      <Button variant="secondary" className="w-full" onClick={doExport}>Export my data</Button>
+      <Button variant="secondary" className="w-full" onClick={doExport}>Export my data (JSON)</Button>
+      <Button variant="secondary" className="w-full" onClick={async () => { try { await exportFocusSessionsCsv(); } catch { toast.error("Export failed. Try again."); } }}>Export focus sessions (CSV)</Button>
+      <Button variant="secondary" className="w-full" onClick={async () => { try { await exportEnergyRatingsCsv(); } catch { toast.error("Export failed. Try again."); } }}>Export energy ratings (CSV)</Button>
       <Button variant="outline" className="w-full text-destructive" onClick={() => setOpen(true)}>Delete account</Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent className="max-w-sm">
@@ -385,23 +388,45 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   );
 }
 
-function NotificationSection({s}:{s:Settings}) {
-  const save=useSaveSettings();
-  return <Section title="Notifications">
-      <Toggle label="Prime reminders (while Tempo is open)" checked={s.notifications} onChange={async (v) => {
-        if (v && typeof Notification !== "undefined" && Notification.permission !== "granted") {
-          const p = await Notification.requestPermission();
-          if (p !== "granted") { toast.error("Notifications are blocked in your browser settings."); return; }
-        }
-        save.mutate({ notifications: v });
-      }} />
-      <Toggle label="Sound at end" checked={s.end_sound} onChange={(v) => save.mutate({ end_sound: v })} />
-      <Toggle label="Notify at end" checked={s.end_notify} onChange={async (v) => {
-        if (v && typeof Notification !== "undefined" && Notification.permission === "default") await Notification.requestPermission();
-        save.mutate({ end_notify: v });
-      }} />
-      <Toggle label="Soft vibration" checked={s.vibration} onChange={v=>save.mutate({vibration:v})}/>
-  </Section>;
+function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex min-h-12 items-center justify-between gap-3">
+      <span className="min-w-0">
+        <span className="block font-medium">{label}</span>
+        <span className="block text-xs text-muted-foreground">{desc}</span>
+      </span>
+      <Switch checked={checked} onCheckedChange={onChange} className="shrink-0" />
+    </label>
+  );
+}
+
+function NotificationSection({ s }: { s: Settings }) {
+  const save = useSaveSettings();
+  const [perm, setPerm] = useState<NotifyPermission>(() => (typeof Notification === "undefined" ? "unsupported" : Notification.permission));
+  async function ask() {
+    if (typeof Notification === "undefined") return;
+    const p = await Notification.requestPermission();
+    setPerm(p);
+    if (p !== "granted") toast.error("Notifications are blocked in your browser settings.");
+  }
+  async function test() {
+    const ok = await showAppNotification("Tempo", { body: "Test notification. You're all set.", tag: "tempo-test", url: "/settings" });
+    if (!ok) toast.error("Couldn't show a notification. Check the permission above.");
+  }
+  return (
+    <Section title="Notifications">
+      <p className="text-sm" role="status">Permission: <span className="font-semibold">{permissionLabel(perm)}</span></p>
+      {perm === "default" && <Button variant="secondary" className="w-full" onClick={ask}>Allow notifications</Button>}
+      {perm === "denied" && <p className="text-sm text-muted-foreground">Blocked — enable notifications for Tempo in your browser settings.</p>}
+      <Button variant="outline" className="w-full" disabled={perm !== "granted"} onClick={test}>Send test notification</Button>
+      <ToggleRow label="Prime reminders" desc="Before stressful meetings, while Tempo is open." checked={s.notifications} onChange={(v) => save.mutate({ notifications: v })} />
+      <ToggleRow label="Focus end sound" desc="A soft chime when a focus session ends." checked={s.end_sound} onChange={(v) => save.mutate({ end_sound: v })} />
+      <ToggleRow label="Focus end notification" desc="A notification when a focus session ends." checked={s.end_notify} onChange={(v) => save.mutate({ end_notify: v })} />
+      <ToggleRow label="After-meeting check-in" desc="When a stressful meeting ends unrated, while Tempo is open." checked={s.checkin_notify} onChange={(v) => save.mutate({ checkin_notify: v })} />
+      <ToggleRow label="Weekly review" desc="Monday morning, while Tempo is open. Links to Insights → Last week." checked={s.weekly_review_notify} onChange={(v) => save.mutate({ weekly_review_notify: v })} />
+      <ToggleRow label="Soft vibration" desc="Gentle haptics with sounds and cues." checked={s.vibration} onChange={(v) => save.mutate({ vibration: v })} />
+    </Section>
+  );
 }
 function AppearanceSection({s}:{s:Settings}) {
   const save=useSaveSettings();
