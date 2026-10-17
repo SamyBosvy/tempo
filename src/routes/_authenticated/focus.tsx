@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { breakTimer, elapsedMs, focusTimer, MAX_PARKED, PARKED_MAX_LEN, useBreakState, useFocusState, type InterruptReason } from "@/lib/focus-timer";
 import { enqueue, pendingRows } from "@/lib/offline-queue";
+import { tapHaptic } from "@/lib/haptics";
 import { useNow } from "@/lib/use-now";
 import { fmtTime, localDateKey } from "@/lib/timeline";
 import { useDayEvents, useDayLogs } from "@/lib/day-data";
@@ -56,7 +57,7 @@ function Focus() {
   const [done, setDone] = useState<Done | null>(null);
   const { minutes } = Route.useSearch();
 
-  if (done) return <DoneMoment done={done} onClose={() => setDone(null)} />;
+  if (done) return <DoneMoment done={done} onClose={() => { tapHaptic(); setDone(null); }} />;
   if (brk && !state) return <BreakScreen />;
   if (state && finishing) return <Finish onDone={(d) => { setFinishing(false); setDone(d); }} onBack={() => setFinishing(false)} />;
   if (state) return <Running onEnd={() => setFinishing(true)} />;
@@ -422,7 +423,7 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
           </ul>
         </Card>
       )}
-      <Button size="lg" variant="gold" className="w-full" onClick={() => save(after)}>Save session</Button>
+      <Button size="lg" variant="gold" className="w-full" onClick={() => { tapHaptic(); save(after); }}>Save session</Button>
       {timeUp && (
         <div className="grid grid-cols-3 gap-2">
           <Button variant="secondary" onClick={() => { focusTimer.extend(5); onBack(); }}>+5 min</Button>

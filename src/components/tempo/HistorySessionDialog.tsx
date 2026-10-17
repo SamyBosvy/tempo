@@ -1,3 +1,4 @@
+import { tapHaptic } from "@/lib/haptics";
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
@@ -17,7 +18,7 @@ export function HistorySessionDialog({entry,onClose,onDelete}:{entry?:HistoryEnt
  const [date,setDate]=useState(localDateKey(entry?new Date(entry.at):new Date()));const [time,setTime]=useState(entry?fmtTime(entry.at):'09:00');const [length,setLength]=useState(String(entry?.actual_min??25));
  const [text,setText]=useState(entry?.type==='rating'?entry.note??'':entry?.intention??'');const [note,setNote]=useState(entry?.done_note??'');
  const [before,setBefore]=useState(entry?.energy_before??null),[after,setAfter]=useState(entry?.type==='rating'?entry.rating??null:entry?.energy_after??null);const [busy,setBusy]=useState(false),[error,setError]=useState('');
- async function save(){const valid=isSession?validateSession(date,time,length):null;if(valid&&!valid.ok){setError(valid.error);return;}setError('');setBusy(true);
+ async function save(){tapHaptic();const valid=isSession?validateSession(date,time,length):null;if(valid&&!valid.ok){setError(valid.error);return;}setError('');setBusy(true);
  try{if(!entry&&valid?.ok){const uid=await currentUserId();enqueue('focus_sessions',{id:crypto.randomUUID(),user_id:uid,started_at:valid.start,ended_at:valid.end,planned_min:valid.minutes,actual_min:valid.minutes,intention:text.trim()||null,energy_before:before,energy_after:after});toast.success('Session saved.');}
  else if(entry){
  let result;

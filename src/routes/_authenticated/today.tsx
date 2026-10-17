@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Settings as Gear, Plus, Wind, Zap, CalendarOff, MoreHorizontal, Play, Repeat } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { tapHaptic } from "@/lib/haptics";
 import { getCalendarList } from "@/lib/google.functions";
 import { workWindow } from "@/lib/work-hours";
 import { toast } from "sonner";
@@ -521,6 +522,7 @@ function Timeline({ events, slots, isToday, readOnly, now, day }: { events: DayE
 
   const toggle = useMutation({
     mutationFn: async (e: DayEvent) => {
+      tapHaptic();
       const { error } = await supabase
         .from("event_flags")
         .upsert({ event_id: e.id, stressful: !e.stressful, reason: e.stressful ? null : e.reason, start_at: e.start, end_at: e.end }, { onConflict: "user_id,event_id" });
