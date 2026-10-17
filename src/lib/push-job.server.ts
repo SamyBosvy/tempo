@@ -30,12 +30,15 @@ export async function runPushJob(db:DB){
  if(!subs?.length||presenceAlive(now,presence?.alive_until??null))continue;
  // One canonical account timezone prevents per-device duplicate weekly reminders.
  const tz=subs[0]?.timezone??'UTC',local=zonedParts(now,tz);
- const notify=async(key:string,title:string,body:string,url:string)=>{
+ const notify=async(key:string,title:string,body:string,url:string):Promise<boolean>=>{
   // Unique insert is the atomic claim shared by all devices and open-app notifiers.
-  const {error:claim}=await db.from('reminder_claims').insert({user_id:s.user_id,reminder_key:key});if(claim){if(claim.code==='23505')return;throw claim;}
-  await Promise.all(subs.map(async sub=>{try{const keys=sub.keys as {auth:string;p256dh:string};const status=await deliverPush(sub.endpoint,keys,{title,body,tag:key,url},vapid);if(status===404||status===410){const {error}=await db.from('push_subscriptions').delete().eq('id',sub.id);if(error)throw error;}else if(status<200||status>=300)console.error('Push delivery rejected',status);else sent++;}catch{console.error('Push delivery failed');}}));
+  const {error:claim}=await db.from('reminder_claims').insert({user_id:s.user_id,reminder_key:key});if(claim){if(claim.code==='23505')return true;throw claim;}
+  let delivered=false;
+  await Promise.all(subs.map(async sub=>{try{const keys=sub.keys as {auth:string;p256dh:string};const status=await deliverPush(sub.endpoint,keys,{title,body,tag:key,url},vapid);if(status===404||status===410){const {error}=await db.from('push_subscriptions').delete().eq('id',sub.id);if(error)throw error;}else if(status<200||status>=300)console.error('Push delivery rejected',status);else {sent++;delivered=true;}}catch{console.error('Push delivery failed');}}));
+  if(!delivered){const {error}=await db.from('reminder_claims').delete().eq('user_id',s.user_id).eq('reminder_key',key);if(error)throw error;}
+  return delivered;
  };
- for(const d of deadlines??[]){if(s.end_notify&&focusDue(now,Date.parse(d.end_at)))await notify(reminderKey('focus',d.session_id,new Date(d.end_at).toISOString()),'Focus done',"Time's up. Wrap up when you're ready.",'/focus');if(Date.parse(d.end_at)<=now){const {error}=await db.from('push_focus_deadlines').delete().eq('user_id',s.user_id).eq('session_id',d.session_id);if(error)throw error;}}
+ for(const d of deadlines??[]){let delivered=!s.end_notify;if(s.end_notify&&focusDue(now,Date.parse(d.end_at)))delivered=await notify(reminderKey('focus',d.session_id,new Date(d.end_at).toISOString()),'Focus done',"Time's up. Wrap up when you're ready.",'/focus');if(Date.parse(d.end_at)<=now&&delivered){const {error}=await db.from('push_focus_deadlines').delete().eq('user_id',s.user_id).eq('session_id',d.session_id);if(error)throw error;}}
  if(s.weekly_review_notify&&weeklyDue(local.weekday,local.hour))await notify(reminderKey('weekly',local.day,''),'Tempo','Your week in review is ready.','/insights#last-week');
  if(!s.notifications&&!s.checkin_notify)continue;
  const events=await calendarEvents(db,s,now);
