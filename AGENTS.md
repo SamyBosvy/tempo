@@ -22,14 +22,13 @@
 - Accounts are created only by the `setupAccount` server function (public sign-up is disabled); Google sign-in must pass `finishGoogleSignIn` (server-side allowlist check that grants the role or removes the account); the owner role comes solely from the OWNER_EMAIL secret.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Service worker is registered only via src/lib/pwa.ts, never in dev or Lovable preview.
-- Every blocking modal or gate screen (disclaimers, onboarding, consent) must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned in view on every screen size, and must never trap the user if a save fails.
+- Every blocking modal or gate screen must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned on every screen size, and must never trap the user if a save fails.
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth navigates directly to Google without popup coordination; derive the callback from the validated browser Origin, carry a restricted return path in signed state and sessionStorage, and consume redirect results once in the authenticated shell to refresh Calendar queries.
 - Recurring manual blocks live in recurring_blocks and are expanded per day client-side (timeline.expandRecurring); one-day edits add a recurring_skips row plus a one-off manual block, so the series stays intact.
 - Focus end signal and wake lock live in one shell-level component (FocusEndSignal) driven by the timestamp timer, and fire once per target via a `signalled` flag — so reloads or tab switches never double-chime.
 - Breaks use a separate localStorage break timer and are never written to the database — breaks are not focus.
-- Prime derives phase transitions from elapsed timestamps; phase audio is created by Begin and disposed on finish, route exit or tab hiding, so background tabs never keep playing cues.
-- Running prime state lives in localStorage (src/lib/prime-session.ts) and is computed from startedAt, so locks and reloads resume at the right phase.
+- Prime derives phases from elapsed timestamps; audio is created by Begin and disposed on finish, route exit or tab hiding. Running prime state lives in localStorage (src/lib/prime-session.ts) from startedAt, so locks and reloads resume at the right phase.
 
 - Insights period summaries and completed-week reviews share security-invoker aggregate helpers; calendar evidence is fetched with pagination and computed in memory only, so calendar details are never persisted.
 - Weekly meeting-load denominators use Monday–Friday work hours and overlapping timed meetings count once, so percentages represent occupied working time.
