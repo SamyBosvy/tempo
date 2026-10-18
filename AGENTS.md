@@ -21,6 +21,7 @@
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
 - Register workers only via src/lib/pwa.ts, never in preview; defer updates during focus/prime. Map precache client/ to / so installation succeeds.
 - InstallTempo shares fallback instructions; permanent buttons ignore prompt and dismissal.
+- Settings uses an Outlet layout and scoped child pages so only the selected controls and queries mount.
 - Every blocking modal or gate screen must have a clearly visible, always-reachable primary button to continue (e.g. 'I understand'), pinned on every screen size, and must never trap the user if a save fails.
 - Safety acknowledgements use per-user pending local storage and session dismissal independent of settings rollback; replay only the explicit pending acknowledgement once next launch so failed saves never reopen the gate.
 - Calendar OAuth uses direct navigation, a validated Origin, signed restricted return path and sessionStorage; consume results once in the shell and refresh Calendar queries.

@@ -19,6 +19,15 @@ import { Route as AuthenticatedInsightsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPrimeRouteImport } from './routes/_authenticated/prime'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedSettingsAboutRouteImport } from './routes/_authenticated/settings.about'
+import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings.account'
+import { Route as AuthenticatedSettingsBreathingRouteImport } from './routes/_authenticated/settings.breathing'
+import { Route as AuthenticatedSettingsCalendarRouteImport } from './routes/_authenticated/settings.calendar'
+import { Route as AuthenticatedSettingsDataRouteImport } from './routes/_authenticated/settings.data'
+import { Route as AuthenticatedSettingsDayRouteImport } from './routes/_authenticated/settings.day'
+import { Route as AuthenticatedSettingsFocusRouteImport } from './routes/_authenticated/settings.focus'
+import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings.notifications'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google/callback'
 import { Route as ApiPublicJobsSendRemindersRouteImport } from './routes/api/public/jobs/send-reminders'
 
@@ -71,6 +80,60 @@ const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   path: '/today',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsAboutRoute =
+  AuthenticatedSettingsAboutRouteImport.update({
+    id: '/about',
+    path: '/about',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsAccountRoute =
+  AuthenticatedSettingsAccountRouteImport.update({
+    id: '/account',
+    path: '/account',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsBreathingRoute =
+  AuthenticatedSettingsBreathingRouteImport.update({
+    id: '/breathing',
+    path: '/breathing',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsCalendarRoute =
+  AuthenticatedSettingsCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsDataRoute =
+  AuthenticatedSettingsDataRouteImport.update({
+    id: '/data',
+    path: '/data',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsDayRoute =
+  AuthenticatedSettingsDayRouteImport.update({
+    id: '/day',
+    path: '/day',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsFocusRoute =
+  AuthenticatedSettingsFocusRouteImport.update({
+    id: '/focus',
+    path: '/focus',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsNotificationsRoute =
+  AuthenticatedSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
   id: '/api/public/google/callback',
   path: '/api/public/google/callback',
@@ -91,8 +154,17 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedHistoryRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/prime': typeof AuthenticatedPrimeRoute
-  '/settings': typeof AuthenticatedSettingsRoute
+  '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/today': typeof AuthenticatedTodayRoute
+  '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/account': typeof AuthenticatedSettingsAccountRoute
+  '/settings/breathing': typeof AuthenticatedSettingsBreathingRoute
+  '/settings/calendar': typeof AuthenticatedSettingsCalendarRoute
+  '/settings/data': typeof AuthenticatedSettingsDataRoute
+  '/settings/day': typeof AuthenticatedSettingsDayRoute
+  '/settings/focus': typeof AuthenticatedSettingsFocusRoute
+  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/jobs/send-reminders': typeof ApiPublicJobsSendRemindersRoute
 }
@@ -104,8 +176,16 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedHistoryRoute
   '/insights': typeof AuthenticatedInsightsRoute
   '/prime': typeof AuthenticatedPrimeRoute
-  '/settings': typeof AuthenticatedSettingsRoute
   '/today': typeof AuthenticatedTodayRoute
+  '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/account': typeof AuthenticatedSettingsAccountRoute
+  '/settings/breathing': typeof AuthenticatedSettingsBreathingRoute
+  '/settings/calendar': typeof AuthenticatedSettingsCalendarRoute
+  '/settings/data': typeof AuthenticatedSettingsDataRoute
+  '/settings/day': typeof AuthenticatedSettingsDayRoute
+  '/settings/focus': typeof AuthenticatedSettingsFocusRoute
+  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/jobs/send-reminders': typeof ApiPublicJobsSendRemindersRoute
 }
@@ -119,8 +199,17 @@ export interface FileRoutesById {
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/insights': typeof AuthenticatedInsightsRoute
   '/_authenticated/prime': typeof AuthenticatedPrimeRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/today': typeof AuthenticatedTodayRoute
+  '/_authenticated/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
+  '/_authenticated/settings/breathing': typeof AuthenticatedSettingsBreathingRoute
+  '/_authenticated/settings/calendar': typeof AuthenticatedSettingsCalendarRoute
+  '/_authenticated/settings/data': typeof AuthenticatedSettingsDataRoute
+  '/_authenticated/settings/day': typeof AuthenticatedSettingsDayRoute
+  '/_authenticated/settings/focus': typeof AuthenticatedSettingsFocusRoute
+  '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/api/public/google/callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/jobs/send-reminders': typeof ApiPublicJobsSendRemindersRoute
 }
@@ -136,6 +225,15 @@ export interface FileRouteTypes {
     | '/prime'
     | '/settings'
     | '/today'
+    | '/settings/about'
+    | '/settings/account'
+    | '/settings/breathing'
+    | '/settings/calendar'
+    | '/settings/data'
+    | '/settings/day'
+    | '/settings/focus'
+    | '/settings/notifications'
+    | '/settings/'
     | '/api/public/google/callback'
     | '/api/public/jobs/send-reminders'
   fileRoutesByTo: FileRoutesByTo
@@ -147,8 +245,16 @@ export interface FileRouteTypes {
     | '/history'
     | '/insights'
     | '/prime'
-    | '/settings'
     | '/today'
+    | '/settings/about'
+    | '/settings/account'
+    | '/settings/breathing'
+    | '/settings/calendar'
+    | '/settings/data'
+    | '/settings/day'
+    | '/settings/focus'
+    | '/settings/notifications'
+    | '/settings'
     | '/api/public/google/callback'
     | '/api/public/jobs/send-reminders'
   id:
@@ -163,6 +269,15 @@ export interface FileRouteTypes {
     | '/_authenticated/prime'
     | '/_authenticated/settings'
     | '/_authenticated/today'
+    | '/_authenticated/settings/about'
+    | '/_authenticated/settings/account'
+    | '/_authenticated/settings/breathing'
+    | '/_authenticated/settings/calendar'
+    | '/_authenticated/settings/data'
+    | '/_authenticated/settings/day'
+    | '/_authenticated/settings/focus'
+    | '/_authenticated/settings/notifications'
+    | '/_authenticated/settings/'
     | '/api/public/google/callback'
     | '/api/public/jobs/send-reminders'
   fileRoutesById: FileRoutesById
@@ -247,6 +362,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTodayRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/about': {
+      id: '/_authenticated/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof AuthenticatedSettingsAboutRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/account': {
+      id: '/_authenticated/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof AuthenticatedSettingsAccountRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/breathing': {
+      id: '/_authenticated/settings/breathing'
+      path: '/breathing'
+      fullPath: '/settings/breathing'
+      preLoaderRoute: typeof AuthenticatedSettingsBreathingRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/calendar': {
+      id: '/_authenticated/settings/calendar'
+      path: '/calendar'
+      fullPath: '/settings/calendar'
+      preLoaderRoute: typeof AuthenticatedSettingsCalendarRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/data': {
+      id: '/_authenticated/settings/data'
+      path: '/data'
+      fullPath: '/settings/data'
+      preLoaderRoute: typeof AuthenticatedSettingsDataRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/day': {
+      id: '/_authenticated/settings/day'
+      path: '/day'
+      fullPath: '/settings/day'
+      preLoaderRoute: typeof AuthenticatedSettingsDayRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/focus': {
+      id: '/_authenticated/settings/focus'
+      path: '/focus'
+      fullPath: '/settings/focus'
+      preLoaderRoute: typeof AuthenticatedSettingsFocusRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/notifications': {
+      id: '/_authenticated/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AuthenticatedSettingsNotificationsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/api/public/google/callback': {
       id: '/api/public/google/callback'
       path: '/api/public/google/callback'
@@ -264,13 +442,43 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsAboutRoute: typeof AuthenticatedSettingsAboutRoute
+  AuthenticatedSettingsAccountRoute: typeof AuthenticatedSettingsAccountRoute
+  AuthenticatedSettingsBreathingRoute: typeof AuthenticatedSettingsBreathingRoute
+  AuthenticatedSettingsCalendarRoute: typeof AuthenticatedSettingsCalendarRoute
+  AuthenticatedSettingsDataRoute: typeof AuthenticatedSettingsDataRoute
+  AuthenticatedSettingsDayRoute: typeof AuthenticatedSettingsDayRoute
+  AuthenticatedSettingsFocusRoute: typeof AuthenticatedSettingsFocusRoute
+  AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
+  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+}
+
+const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsAboutRoute: AuthenticatedSettingsAboutRoute,
+  AuthenticatedSettingsAccountRoute: AuthenticatedSettingsAccountRoute,
+  AuthenticatedSettingsBreathingRoute: AuthenticatedSettingsBreathingRoute,
+  AuthenticatedSettingsCalendarRoute: AuthenticatedSettingsCalendarRoute,
+  AuthenticatedSettingsDataRoute: AuthenticatedSettingsDataRoute,
+  AuthenticatedSettingsDayRoute: AuthenticatedSettingsDayRoute,
+  AuthenticatedSettingsFocusRoute: AuthenticatedSettingsFocusRoute,
+  AuthenticatedSettingsNotificationsRoute:
+    AuthenticatedSettingsNotificationsRoute,
+  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+}
+
+const AuthenticatedSettingsRouteWithChildren =
+  AuthenticatedSettingsRoute._addFileChildren(
+    AuthenticatedSettingsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessRoute: typeof AuthenticatedAccessRoute
   AuthenticatedFocusRoute: typeof AuthenticatedFocusRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInsightsRoute: typeof AuthenticatedInsightsRoute
   AuthenticatedPrimeRoute: typeof AuthenticatedPrimeRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
 }
 
@@ -280,7 +488,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInsightsRoute: AuthenticatedInsightsRoute,
   AuthenticatedPrimeRoute: AuthenticatedPrimeRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
 }
 
