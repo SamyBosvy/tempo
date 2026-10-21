@@ -33,6 +33,7 @@ import {
 import { enqueue } from "@/lib/offline-queue";
 import { useNow } from "@/lib/use-now";
 import { useFocusState } from "@/lib/focus-timer";
+import { dayFocusMinutes, focusDestination, focusExpectedEnd } from "@/lib/focus-extras";
 import { MondayReview } from "@/components/tempo/WeeklyReview";
 import { Card, EnergyPicker } from "@/components/tempo/bits";
 import { ConnectGoogleButton } from "@/components/tempo/ConnectGoogle";
@@ -81,7 +82,8 @@ function Today() {
   const { data: settings } = useSettings();
   const [offset, setOffset] = useState(0);
   const now = useNow(30_000);
-  const focusRunning = !!useFocusState();
+  const activeFocus = useFocusState();
+  const focusRunning = !!activeFocus;
   const day = useMemo(() => {
     const d = startOfLocalDay(new Date(now));
     d.setDate(d.getDate() + offset);
@@ -117,7 +119,7 @@ function Today() {
   dayEnd.setDate(dayEnd.getDate() + 1);
   // On a day off meetings still count across the whole day.
   const meetMin = dayOff ? meetingMinutes(timed, startOfLocalDay(day), dayEnd) : meetingMinutes(timed, workStart, workEnd);
-  const focusMin = (logs.data?.sessions ?? []).reduce((a, s) => a + (s.actual_min ?? 0), 0);
+  const focusMin = dayFocusMinutes(logs.data?.sessions ?? [], activeFocus, day, now);
   const morning = logs.data?.ratings.find((r) => r.kind === "morning");
   const nextEvent = timed.find((e) => new Date(e.start).getTime() > now && e.kind === "meeting");
   const primedIds = new Set((logs.data?.primes ?? []).map((p) => p.event_id));
@@ -213,7 +215,7 @@ function Today() {
           <EmptyState>Day off · no work hours set</EmptyState>
           {!isPast && (
             <Button asChild size="sm" variant="outline">
-              <Link to="/focus"><Play /> Start focus</Link>
+              <Link to="/focus"><Play /> {focusRunning ? "Back to focus" : "Start focus"}</Link>
             </Button>
           )}
         </Card>
@@ -310,7 +312,7 @@ function FocusFab({ slot, now, label }: { slot: Slot; now: Date; label: string }
     <Button
       size="lg"
       className="pointer-events-auto w-full shadow-glow"
-      onClick={() => navigate({ to: "/focus", search: { minutes: sessionLengthForWindow(slot, now), until: slot.end.toISOString() } })}
+      onClick={() => navigate(focusDestination({ minutes: sessionLengthForWindow(slot, now), until: slot.end.toISOString() }))}
     >
       <Play /> {label}
     </Button>
@@ -345,18 +347,20 @@ function Glance({ label, value }: { label: string; value: string }) {
 
 function BestWindow({ slot, now }: { slot: Slot; now: Date }) {
   const navigate = useNavigate();
+  const active = useFocusState();
   const mins = sessionLengthForWindow(slot, now);
   return (
     <section aria-label="Best window" className="rounded-3xl border border-primary bg-accent p-5 shadow-glow">
       <span className="inline-block rounded-full bg-gold px-2.5 py-0.5 text-xs font-bold text-gold-foreground">Best window</span>
       <p className="mt-3 font-display text-3xl font-semibold tabular">{fmtDuration(slot.minutes)}</p>
       <p className="text-muted-foreground tabular">{fmtTime(slot.start)}–{fmtTime(slot.end)}</p>
+      {active && <p className="mt-2 text-sm text-muted-foreground tabular" role="status">{active.paused ? "Focus paused · resumes with" : "Focus in progress · ends"} {active.paused ? `${Math.ceil(Math.max(0, active.targetMin * 60_000 - (active.accumulatedMs)) / 60_000)} min left` : fmtTime(focusExpectedEnd(active, now.getTime()))}</p>}
       <Button
         size="lg"
         className="mt-4 w-full"
-        onClick={() => navigate({ to: "/focus", search: { minutes: mins, until: slot.end.toISOString() } })}
+        onClick={() => navigate(focusDestination({ minutes: mins, until: slot.end.toISOString() }))}
       >
-        Start {mins} min focus
+        {active ? "Back to focus" : `Start ${mins} min focus`}
       </Button>
     </section>
   );
@@ -576,7 +580,7 @@ function Timeline({ events, slots, isToday, readOnly, now, day }: { events: DayE
         <li key={id} id={itemDomId(id)} className={cn(past && "opacity-50")}>
           {it.slot.isWindow && isToday ? (
             <button
-              onClick={() => navigate({ to: "/focus", search: { minutes: sessionLengthForWindow(it.slot, new Date(now)), until: it.slot.end.toISOString() } })}
+              onClick={() => navigate(focusDestination({ minutes: sessionLengthForWindow(it.slot, new Date(now)), until: it.slot.end.toISOString() }))}
               className="w-full rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent"
             >
               <div className="flex items-center justify-between">

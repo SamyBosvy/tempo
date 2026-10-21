@@ -13,7 +13,7 @@ import { useNow } from "@/lib/use-now";
 import { fmtTime, localDateKey } from "@/lib/timeline";
 import { useDayEvents, useDayLogs } from "@/lib/day-data";
 import { useSettings } from "@/lib/settings";
-import { nextBusyAfter, recentIntentions, showRunningExtend, todaySummary } from "@/lib/focus-extras";
+import { focusDestination, nextBusyAfter, recentIntentions, showRunningExtend, todaySummary } from "@/lib/focus-extras";
 import { setImmersive } from "@/lib/immersive";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -478,7 +478,7 @@ function BreakScreen() {
     return (
       <div className="flex flex-col items-center space-y-6 pt-16 text-center">
         <h1 className="font-display text-3xl font-semibold">Ready for the next one?</h1>
-        <Button size="lg" className="w-full" onClick={() => { breakTimer.clear(); navigate({ to: "/focus", search: { minutes: b.lastLen } }); }}>
+        <Button size="lg" className="w-full" onClick={() => { breakTimer.clear(); navigate(focusDestination({ minutes: b.lastLen })); }}>
           Start focus · {b.lastLen} min
         </Button>
         <Button size="lg" variant="ghost" className="w-full" onClick={() => { breakTimer.clear(); navigate({ to: "/today" }); }}>Back to today</Button>
