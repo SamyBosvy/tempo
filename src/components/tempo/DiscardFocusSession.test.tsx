@@ -32,7 +32,7 @@ describe("Discard focus session", () => {
     expect(focusTimer.get()?.parked).toEqual(["Unsaved thought"]);
     expect(focusTimer.get()?.interruptions).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Discard session" }));
-    fireEvent.click(screen.getByRole("button", { name: "Discard", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Discard$/ }));
     expect(focusTimer.get()).toBeNull();
     expect(localStorage.getItem("tempo.focus.v1.discard-test")).toBeNull();
     expect(pendingRows("focus_sessions")).toEqual([]);
@@ -62,7 +62,7 @@ describe("Discard focus session", () => {
     expect(dayFocusMinutes(saved, focusTimer.get(), day, Date.now())).toBe(32);
     render(<DiscardFocusSession onDiscard={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Discard session" }));
-    fireEvent.click(screen.getByRole("button", { name: "Discard", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Discard$/ }));
     expect(dayFocusMinutes(saved, focusTimer.get(), day, Date.now())).toBe(25);
     expect(focusDestination({ minutes: 50 })).toEqual({ to: "/focus", search: { minutes: 50 } });
     focusTimer.start({ targetMin: 50, intention: "Fresh work", energyBefore: null, nextEventAt: null });
