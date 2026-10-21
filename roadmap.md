@@ -1,3 +1,8 @@
+# Today active focus
+- [ ] Show Back to focus during active sessions and guard all focus entry actions.
+- [ ] Include live unpaused elapsed minutes without saved-session double counting; add rule tests.
+- [ ] Verify signed-in 390px dark/light and the full suite; do not publish.
+
 # Focus running controls
 - [x] Narrow Pause/Resume and give Interrupted and End equal flexible widths, preserving labels and actions.
 - [x] Visually verified signed-in 360/390/430px light/dark views, even button padding and Pause/Resume/Interrupted/End actions; all 199 tests passed, automated compilation clean; not published.
