@@ -2,6 +2,25 @@
 // (wake lock, chime, vibration). Browser bits skip silently where unsupported.
 import { useEffect } from "react";
 import type { CalEvent } from "./timeline";
+import { elapsedMs, focusTimer, type FocusState } from "./focus-timer";
+import { localDateKey } from "./timeline";
+
+/** Read the timer at action time, including a session started in another tab. */
+export function focusDestination(search: { minutes?: number; until?: string } = {}, active = focusTimer.get()) {
+  return { to: "/focus" as const, search: active ? {} : search };
+}
+
+/** Saved and queued ids count once; the active session belongs to its local start day. */
+export function dayFocusMinutes(sessions: { id: string; actual_min: number }[], active: FocusState | null, day: Date, now: number) {
+  const saved = new Map(sessions.map(s => [s.id, s.actual_min]));
+  const total = [...saved.values()].reduce((sum, minutes) => sum + minutes, 0);
+  if (!active || saved.has(active.id) || localDateKey(new Date(active.sessionStart)) !== localDateKey(day)) return total;
+  return total + Math.max(0, Math.round(elapsedMs(active, now) / 60_000));
+}
+
+export function focusExpectedEnd(active: FocusState, now: number) {
+  return new Date(now + Math.max(0, active.targetMin * 60_000 - elapsedMs(active, now)));
+}
 
 /** F7: next timed busy event starting after `now` (all-day and focus blocks ignored). */
 export function nextBusyAfter(events: CalEvent[], now: Date): string | null {
