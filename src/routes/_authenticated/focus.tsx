@@ -277,10 +277,10 @@ function Running({ onEnd }: { onEnd: () => void }) {
           ) : (
             <Button size="lg" variant="secondary" className="w-16 shrink-0 px-0" onClick={() => focusTimer.pause()} aria-label="Pause"><Pause /></Button>
           )}
-          <Button size="lg" variant="outline" className="min-w-0 gap-1.5 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={() => setInterrupt(true)}>
+          <Button size="lg" variant="outline" className="min-w-0 gap-1 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={() => setInterrupt(true)}>
             <Hand /> Interrupted
           </Button>
-          <Button size="lg" className="min-w-0 gap-1.5 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={onEnd} aria-label="End session"><Square /> End</Button>
+          <Button size="lg" className="min-w-0 gap-1 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={onEnd} aria-label="End session"><Square /> End</Button>
         </div>
         <Button variant="ghost" className="w-full" disabled={parkedCount >= MAX_PARKED} onClick={() => setParkOpen(true)}>
           <NotebookPen /> Park a thought{parkedCount ? ` (${parkedCount})` : ""}
