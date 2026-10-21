@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/tempo/EmptyState";
+import { DiscardFocusSession } from "@/components/tempo/DiscardFocusSession";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -357,14 +358,17 @@ function Running({ onEnd }: { onEnd: () => void }) {
 }
 
 function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => void }) {
-  const s = useFocusState()!;
+  const s = useFocusState();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [after, setAfter] = useState<number | null>(null);
   const [note, setNote] = useState("");
+  if (!s) return null;
   const timeUp = elapsedMs(s) >= s.targetMin * 60_000;
   const parked = s.parked ?? [];
 
   function save(a: number | null) {
+    if (!s) return;
     const end = Date.now();
     const minutes = Math.max(1, Math.round(elapsedMs(s, end) / 60000));
     const startedAt = new Date(s.sessionStart).toISOString();
@@ -434,6 +438,7 @@ function Finish({ onDone, onBack }: { onDone: (d: Done) => void; onBack: () => v
         </div>
       )}
       <Button variant="ghost" className="w-full" onClick={() => { if (timeUp) focusTimer.keepGoing(); onBack(); }}>Back to timer</Button>
+      <DiscardFocusSession onDiscard={() => { void navigate({ to: "/today" }); }} />
     </div>
   );
 }

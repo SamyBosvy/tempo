@@ -1,3 +1,7 @@
+# Focus end-screen discard
+- [ ] Add secondary discard action and confirmation with pinned reachable buttons; clear timer without saving, return to Today.
+- [ ] Test no queue/database writes, cancellation, cleared details and fresh starts; verify signed-in 390px dark/light and run the full suite; do not publish.
+
 # Today active focus
 - [x] Show Back to focus during active sessions and guard all focus entry actions.
 - [x] Include live unpaused elapsed minutes without saved-session double counting; seven regression tests added.

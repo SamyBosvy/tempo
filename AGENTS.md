@@ -19,6 +19,7 @@
 - Google refresh tokens live encrypted (AES-GCM, TOKEN_ENCRYPTION_KEY) in `google_tokens`, service-role only; all calendar calls go through server functions.
 - Public signup stays disabled; setup requires inbox ownership and Google checks invitations. OWNER_EMAIL alone grants owner. RLS/functions/push require membership; invitation locks prevent admission racing revoke. Child rows require owned parents.
 - Focus timer state lives in localStorage and is computed from timestamps, so reloads never lose it.
+- Finish-screen discard clears the whole timer directly, never through the save/queue path, so unsaved session details cannot become logs.
 - Focus entry actions use focusDestination to check the timer at click time; Today totals use dayFocusMinutes to merge active time and saved ids without duplicates.
 - Register workers only via src/lib/pwa.ts, never in preview; defer updates during focus/prime. Map precache client/ to / so installation succeeds.
 - InstallTempo shares fallback instructions; permanent buttons ignore prompt and dismissal.
