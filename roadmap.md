@@ -1,3 +1,7 @@
+# Focus running controls
+- [x] Narrow Pause/Resume and give Interrupted and End equal flexible widths, preserving labels and actions.
+- [ ] Verify 360/390/430px in light and dark and run the full tests; do not publish.
+
 # Settings redesign SET1–SET6
 - [x] Replace stacked Settings with grouped menu, live summaries, slim download row and attention banner.
 - [x] Move every control into nested pages; preserve inline appearance and OAuth returns.

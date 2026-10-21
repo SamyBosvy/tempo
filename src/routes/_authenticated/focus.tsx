@@ -271,16 +271,16 @@ function Running({ onEnd }: { onEnd: () => void }) {
         {showRunningExtend(remaining) && !s.paused && (
           <Button variant="outline" className="mx-auto flex" onClick={() => focusTimer.extend(5)}>+5 min</Button>
         )}
-        <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
+        <div className="grid w-full grid-cols-[4rem_minmax(0,1fr)_minmax(0,1fr)] gap-2">
           {s.paused ? (
-            <Button size="lg" variant="secondary" onClick={() => focusTimer.resume()} aria-label="Resume"><Play /></Button>
+            <Button size="lg" variant="secondary" className="w-16 shrink-0 px-0" onClick={() => focusTimer.resume()} aria-label="Resume"><Play /></Button>
           ) : (
-            <Button size="lg" variant="secondary" onClick={() => focusTimer.pause()} aria-label="Pause"><Pause /></Button>
+            <Button size="lg" variant="secondary" className="w-16 shrink-0 px-0" onClick={() => focusTimer.pause()} aria-label="Pause"><Pause /></Button>
           )}
-          <Button size="lg" variant="outline" onClick={() => setInterrupt(true)}>
+          <Button size="lg" variant="outline" className="min-w-0 gap-1.5 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={() => setInterrupt(true)}>
             <Hand /> Interrupted
           </Button>
-          <Button size="lg" onClick={onEnd} aria-label="End session"><Square /> End</Button>
+          <Button size="lg" className="min-w-0 gap-1.5 px-2 text-base [&_svg]:size-4 min-[390px]:gap-2 min-[390px]:[&_svg]:size-5" onClick={onEnd} aria-label="End session"><Square /> End</Button>
         </div>
         <Button variant="ghost" className="w-full" disabled={parkedCount >= MAX_PARKED} onClick={() => setParkOpen(true)}>
           <NotebookPen /> Park a thought{parkedCount ? ` (${parkedCount})` : ""}
