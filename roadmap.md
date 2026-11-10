@@ -87,3 +87,4 @@
 - [x] All-time filtered History, visible month scale and rule tests.
 - [x] Reorganise Settings, security sheet, keyword chips, live System theme, sync status.
 - [x] Migration and generated types, full suite, signed-in 320×568 and 390×844 checks in both themes; temporary History rows removed and preferences restored.
+- [x] GitHub sync check (Nov 2026)
